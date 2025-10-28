@@ -90,10 +90,10 @@
 <!-- [UX] Fundo com gradiente suave -->
 <body class="bg-gradient-to-br from-gray-50 to-blue-50 flex items-center justify-center min-h-screen p-4">
 
-    <!-- Tela de Carregamento Inicial (Geo-IP, Pixel, UTMs) -->
+    <!-- Tela de Carregamento Inicial (Click ID, Geo-IP, Pixel, UTMs) -->
     <div id="loading-screen" class="fixed inset-0 bg-gray-100 flex flex-col items-center justify-center z-50">
         <div class="spinner"></div>
-        <p class="text-gray-600 mt-4 text-lg">Preparando sua análise...</p>
+        <p class="text-gray-600 mt-4 text-lg">Preparando sua análise personalizada...</p>
     </div>
 
     <!-- Contêiner Principal do Quiz -->
@@ -480,6 +480,9 @@
         const API_BASE_URL = 'https://novaapi-one.vercel.app';
         // Esta chave foi tirada do seu arquivo 'casalliberal/index.html'
         const SELLER_API_KEY = 'a0b2f4ce-2011-4faf-9e77-52e59bbcb02b'; 
+        // ID do "Pressel" para registrar o clique (mesmo que não venha de uma presell)
+        // Pode ser qualquer ID válido associado à sua SELLER_API_KEY. Usei o do exemplo 'casalliberal'.
+        const DEFAULT_PRESSEL_ID = 125; 
 
         // --- DADOS DOS CASOS REAIS ---
         const casesData = {
@@ -525,6 +528,8 @@
             meta: {
                 fbclid: null,
                 click_id: null, // <-- [HOTTRACK] VAI GUARDAR O CLICK_ID
+                fbp: null,      // <-- [HOTTRACK] Cookie _fbp
+                fbc: null       // <-- [HOTTRACK] Cookie _fbc
             },
             quizData: {
                 company: null,
@@ -559,6 +564,9 @@
         const stepsContainer = document.getElementById('quiz-steps-container');
         const allSteps = document.querySelectorAll('.quiz-step');
         let currentVisibleStep = null; // Rastreia a etapa visível
+
+        // --- FUNÇÕES AUXILIARES ---
+        const getCookie = (name) => document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'))?.[2] || null;
 
         // --- FUNÇÕES DE TRANSIÇÃO E LÓGICA ---
 
@@ -754,6 +762,8 @@
                         click_id: quizState.meta.click_id, // Inclui o click_id
                         utm: quizState.utm,
                         fbclid: quizState.meta.fbclid,
+                        fbp: quizState.meta.fbp, // Inclui FBP
+                        fbc: quizState.meta.fbc, // Inclui FBC
                         geo: quizState.geo,
                         total_recuperar: quizState.results.total_final // Inclui o valor total
                     }, null, 2));
@@ -917,7 +927,7 @@
             return true;
         }
 
-        // --- INICIALIZAÇÃO DO QUIZ (INTEGRADO COM HOTTRACK E FALLBACK IPINFO) ---
+        // --- INICIALIZAÇÃO DO QUIZ (COM GERAÇÃO DE CLICK ID SE NECESSÁRIO) ---
         
         async function initializeQuiz() {
             const loadingScreen = document.getElementById('loading-screen');
@@ -929,7 +939,7 @@
                 // fbq('init', 'SEU_PIXEL_ID');
                 // fbq('track', 'PageView');
 
-                // 2. Coletar UTMs e fbclid
+                // 2. Coletar UTMs, fbclid, fbp, fbc da URL e Cookies
                 const params = new URLSearchParams(window.location.search);
                 quizState.utm.source = params.get("utm_source");
                 quizState.utm.campaign = params.get("utm_campaign");
@@ -937,47 +947,92 @@
                 quizState.utm.content = params.get("utm_content");
                 quizState.utm.term = params.get("utm_term");
                 quizState.meta.fbclid = params.get("fbclid");
+                quizState.meta.fbp = getCookie("_fbp"); // Pega cookie _fbp
+                quizState.meta.fbc = getCookie("_fbc"); // Pega cookie _fbc
                 
-                // 3. [HOTTRACK] Buscar Geo-IP usando o click_id da URL
-                const click_id_from_url = params.get("click_id");
+                // 3. [HOTTRACK] Buscar/Gerar Click ID e obter Geo-IP
+                let click_id_to_use = params.get("click_id");
                 
-                if (click_id_from_url) {
-                    quizState.meta.click_id = click_id_from_url; 
-                    // [CORREÇÃO] O server.js espera o /start, mas o casalliberal.html não envia.
-                    // O server.js /api/click/info JÁ ADICIONA o prefixo /start se não existir.
-                    // Então, podemos enviar o click_id limpo (lead123456)
-                    console.log(`[HotTrack] Tentando buscar Geo-IP do backend para click_id: ${click_id_from_url}`);
-                    
+                if (click_id_to_use) {
+                    // Já temos um click_id, busca info no backend
+                    quizState.meta.click_id = click_id_to_use; 
+                    console.log(`[HotTrack] Usando click_id da URL: ${click_id_to_use}. Buscando Geo-IP...`);
                     try {
                         const response = await fetch(`${API_BASE_URL}/api/click/info`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json', 'x-api-key': SELLER_API_KEY },
-                            body: JSON.stringify({ click_id: click_id_from_url }) // Envia o click_id limpo
+                            body: JSON.stringify({ click_id: click_id_to_use }) 
                         });
                         if (response.ok) {
                             const data = await response.json();
                             if (data.status === 'success' && data.city && data.state) {
                                 quizState.geo.city = data.city;
                                 quizState.geo.region = data.state; 
-                                quizState.geo.regionCode = data.state; // Assumindo que a API retorna o nome completo no 'state'
+                                quizState.geo.regionCode = data.state; // Assumindo nome completo
                                 console.log(`[HotTrack] Sucesso! Geo-IP: ${data.city}, ${data.state}`);
                                 geoDataFetched = true;
                             } else { throw new Error(data.message || "Backend não retornou cidade/estado"); }
-                        } else { throw new Error(`API respondeu com status ${response.status}`); }
+                        } else { throw new Error(`API click/info respondeu com status ${response.status}`); }
                     } catch (hottrackError) {
-                        console.warn("[HotTrack] Falha ao buscar Geo-IP do backend:", hottrackError.message);
-                        // Continua para o fallback
+                        console.warn("[HotTrack] Falha ao buscar Geo-IP do backend (usando click_id existente):", hottrackError.message);
                     }
                 } else {
-                    console.warn("[HotTrack] Nenhum click_id encontrado na URL.");
+                    // Não temos click_id, precisamos registrar um novo
+                    console.log("[HotTrack] Nenhum click_id na URL. Registrando novo clique...");
+                    try {
+                        const registerResponse = await fetch(`${API_BASE_URL}/api/registerClick`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                sellerApiKey: SELLER_API_KEY,
+                                presselId: DEFAULT_PRESSEL_ID, // Usa o ID padrão
+                                referer: document.referrer || null,
+                                fbclid: quizState.meta.fbclid,
+                                fbp: quizState.meta.fbp,
+                                fbc: quizState.meta.fbc,
+                                user_agent: navigator.userAgent,
+                                utm_source: quizState.utm.source,
+                                utm_campaign: quizState.utm.campaign,
+                                utm_medium: quizState.utm.medium,
+                                utm_content: quizState.utm.content,
+                                utm_term: quizState.utm.term
+                            })
+                        });
+                        if (registerResponse.ok) {
+                            const registerData = await registerResponse.json();
+                            if (registerData.status === "success" && registerData.click_id) {
+                                click_id_to_use = registerData.click_id; // Guarda o novo click_id
+                                quizState.meta.click_id = click_id_to_use;
+                                console.log(`[HotTrack] Novo click_id registrado: ${click_id_to_use}. Buscando Geo-IP...`);
+                                // Tenta buscar a cidade/estado com o novo click_id
+                                const infoResponse = await fetch(`${API_BASE_URL}/api/click/info`, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json', 'x-api-key': SELLER_API_KEY },
+                                    body: JSON.stringify({ click_id: click_id_to_use }) 
+                                });
+                                if(infoResponse.ok) {
+                                    const infoData = await infoResponse.json();
+                                    if(infoData.status === 'success' && infoData.city && infoData.state) {
+                                        quizState.geo.city = infoData.city;
+                                        quizState.geo.region = infoData.state;
+                                        quizState.geo.regionCode = infoData.state;
+                                        console.log(`[HotTrack] Sucesso! Geo-IP para novo clique: ${infoData.city}, ${infoData.state}`);
+                                        geoDataFetched = true;
+                                    } else { console.warn("[HotTrack] Geo-IP não encontrado para o novo clique."); }
+                                } else { console.warn("[HotTrack] Falha ao buscar Geo-IP após registrar clique."); }
+                            } else { throw new Error(registerData.message || "API registerClick não retornou click_id"); }
+                        } else { throw new Error(`API registerClick respondeu com status ${registerResponse.status}`); }
+                    } catch (registerError) {
+                        console.error("[HotTrack] Falha ao registrar novo clique:", registerError.message);
+                    }
                 }
 
-                // 4. [FALLBACK IPINFO] Se o HotTrack falhou ou não tinha click_id
+                // 4. [FALLBACK IPINFO] Se o HotTrack falhou ou não conseguiu dados
                 if (!geoDataFetched) {
                     console.log("[Fallback] Tentando buscar Geo-IP diretamente com ipinfo.io");
                     try {
-                        // [CORREÇÃO] Adicionando um token de exemplo. O usuário deve substituir.
-                        const IPINFO_TOKEN = "SEU_TOKEN_GRATUITO_IPINFO"; // <-- SUBSTITUA PELO SEU TOKEN
+                        // [IMPORTANTE] Substitua "SEU_TOKEN_GRATUITO_IPINFO" pelo seu token real
+                        const IPINFO_TOKEN = "SEU_TOKEN_GRATUITO_IPINFO"; 
                         if (!IPINFO_TOKEN || IPINFO_TOKEN === "SEU_TOKEN_GRATUITO_IPINFO") {
                            console.warn("[Fallback] Token do ipinfo.io não configurado. Busca de cidade via IP direto não funcionará. Registre-se em ipinfo.io para obter um token gratuito.");
                         } else {
@@ -985,17 +1040,16 @@
                             const data = await response.json();
                             if (data.city && data.region) {
                                 quizState.geo.city = data.city;
-                                quizState.geo.region = data.region; // Nome completo do estado/região
-                                quizState.geo.regionCode = data.region; // ipinfo pode não dar a sigla, usamos o nome
+                                quizState.geo.region = data.region; 
+                                quizState.geo.regionCode = data.region; // Usa nome completo como fallback
                                 console.log(`[Fallback] Sucesso! Geo-IP via ipinfo.io: ${data.city}, ${data.region}`);
-                                geoDataFetched = true; // Marca que conseguimos dados
+                                geoDataFetched = true;
                             } else {
                                 throw new Error("ipinfo.io não retornou cidade/região");
                             }
                         }
                     } catch (ipinfoError) {
                         console.warn("[Fallback] Falha ao buscar Geo-IP com ipinfo.io:", ipinfoError.message);
-                        // O quiz continua com os valores padrão ("sua cidade")
                     }
                 }
 
@@ -1010,7 +1064,6 @@
                 
                 // Esconde o loading e mostra o quiz
                 loadingScreen.style.opacity = 0;
-                // Usa setTimeout para garantir que a transição ocorra antes de esconder
                 setTimeout(() => { loadingScreen.style.display = 'none'; }, 500); 
                 
                 quizContainer.classList.remove('hidden');
@@ -1023,12 +1076,10 @@
                 // Mostra a primeira etapa
                 const firstStep = document.getElementById('step-0-welcome');
                 if (firstStep) {
-                     // Mostra diretamente, sem a função showStep para evitar race condition inicial
                     firstStep.style.display = 'block'; 
                     firstStep.style.opacity = 1;
                     firstStep.style.transform = 'translateY(0)';
                     currentVisibleStep = firstStep;
-                     // Ajusta a altura após um pequeno delay
                     setTimeout(() => adjustContainerHeight(firstStep), 100); 
                 }
             }
