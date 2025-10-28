@@ -116,7 +116,8 @@
             <!-- ETAPA 0: Boas-vindas (O Gancho) -->
             <div id="step-0-welcome" class="quiz-step">
                 <div class="text-center">
-                    <h2 class="text-2xl font-semibold text-gray-800 mb-4">Pare de Perder Dinheiro na sua Conta de Água!</h2>
+                    <!-- [GEO-IP] Título personalizado -->
+                    <h2 class="text-2xl font-semibold text-gray-800 mb-4">Pare de Perder Dinheiro na sua Conta de Água em <span id="geo-city-1" class="text-blue-600">sua Cidade</span>!</h2>
                     <p class="text-base text-gray-600 mb-4">
                         Você sabia que pode economizar até <strong class="text-blue-600">R$ 4.000 por ano</strong>?
                     </p>
@@ -193,7 +194,8 @@
             <div id="step-3-cases" class="quiz-step">
                 <div class="text-center">
                     <h2 class="text-2xl font-semibold text-gray-800 mb-3">Encontramos <span id="process-count" class="text-blue-600">3.872</span> processos!</h2>
-                    <p class="text-base text-gray-600 mb-6">Muitos clientes já recuperaram valores. Veja casos reais <span id="cases-location-label"></span>:</p>
+                    <!-- [GEO-IP] Texto personalizado -->
+                    <p class="text-base text-gray-600 mb-6">Muitos clientes já recuperaram valores. Veja casos reais de <span id="cases-location-label" class="font-medium text-blue-600">sua região</span>:</p>
 
                     <div id="cases-container" class="cases-container">
                         <!-- Os cards serão inseridos aqui pelo JavaScript -->
@@ -350,8 +352,12 @@
                 <div class="text-center">
                     <i data-lucide="gift" class="w-16 h-16 text-blue-500 mx-auto mb-4"></i>
                     <h2 class="text-2xl font-semibold text-gray-800 mb-3">Espere! Temos mais uma boa notícia!</h2>
-                    <p class="text-base text-gray-600 mb-6" id="bonus-justification">
+                    <!-- [GEO-IP] Texto personalizado -->
+                    <p class="text-base text-gray-600 mb-2">
                         Com base no seu perfil (Renda: <span id="bonus-profile-renda" class="font-medium">...</span>, Dependentes: <span id="bonus-profile-dependentes" class="font-medium">...</span>), identificamos:
+                    </p>
+                    <p class="text-base text-gray-600 mb-6">
+                        Um bônus especial para residentes de <strong id="geo-city-2" class="text-blue-600">sua cidade</strong>!
                     </p>
                     
                     <div class="bg-blue-50 border-2 border-blue-200 rounded-lg p-6 mb-6">
@@ -379,7 +385,11 @@
             <div id="step-8-form" class="quiz-step">
                 <div class="text-center">
                     <h2 class="text-2xl font-semibold text-gray-800 mb-3">Última etapa!</h2>
-                    <p class="text-base text-gray-600 mb-6">Preencha seus dados para receber seu PIX e darmos entrada no processo.</p>
+                    <!-- [REFORÇO DO VALOR] -->
+                    <p class="text-base text-gray-600 mb-6">
+                        Você está a um passo de recuperar <strong id="form-valor-total" class="text-blue-600 text-lg">R$ 0,00</strong>.
+                        Preencha seus dados para receber seu PIX.
+                    </p>
                 </div>
                 <div class="space-y-4">
                     <input type="text" id="form-nome" class="w-full border border-gray-300 rounded-lg p-4 text-lg text-gray-700" placeholder="Nome Completo">
@@ -408,11 +418,12 @@
                 <div class="text-center flex flex-col items-center justify-center min-h-[300px]">
                     <div class="spinner"></div>
                     <h2 class="text-2xl font-semibold text-gray-800 mt-6">Enviando seu pedido...</h2>
-                    <p class="text-base text-gray-600 mt-2">Estamos registrando sua solicitação com segurança.</p>
+                    <!-- [REFORÇO DO VALOR] -->
+                    <p class="text-base text-gray-600 mt-2">Estamos registrando sua solicitação de <strong id="summary-loading-valor" class="text-gray-700">R$ 0,00</strong> com segurança.</p>
                 </div>
             </div>
 
-            <!-- ETAPA 10: Agradecimento -->
+            <!-- ETAPA 10: Comprovante de Solicitação -->
             <div id="step-10-thanks" class="quiz-step">
                 <div class="text-center">
                     <i data-lucide="party-popper" class="w-16 h-16 text-green-500 mx-auto mb-4"></i>
@@ -421,20 +432,41 @@
                         Um de nossos especialistas entrará em contato pelo WhatsApp <strong id="thanks-whatsapp" class="text-gray-700">...</strong> em breve para validar os documentos.
                     </p>
                     
-                    <div class="bg-gray-50 rounded-lg p-6 mb-6 text-left">
-                        <h3 class="text-lg font-semibold text-gray-800 mb-4">Resumo do Pedido:</h3>
-                        <ul class="space-y-2 text-gray-700">
-                            <li><strong>Nome:</strong> <span id="summary-nome">...</span></li>
-                            <li><strong>Empresa:</strong> <span id="summary-empresa">...</span></li>
-                            <li><strong>Endereço:</strong> <span id="summary-endereco">...</span></li>
-                            <li class="border-t pt-2 mt-2">
-                                <strong class="text-blue-600">Valor Total a Recuperar:</strong>
-                                <span id="summary-valor" class="font-bold text-lg text-blue-600">R$ 0,00</span>
-                            </li>
-                        </ul>
+                    <!-- [COMPROVANTE] -->
+                    <div class="bg-gray-50 border border-gray-200 rounded-lg p-6 mb-6 text-left">
+                        <h3 class="text-xl font-semibold text-gray-800 mb-4 text-center">Comprovante de Solicitação</h3>
+                        
+                        <div class="space-y-3">
+                            <div>
+                                <span class="text-sm font-medium text-gray-500">Valor a Receber:</span>
+                                <p id="summary-valor" class="font-bold text-3xl text-blue-600">R$ 0,00</p>
+                            </div>
+                            <div class="border-t border-gray-200 pt-3">
+                                <span class="text-sm font-medium text-gray-500">Beneficiário (Você):</span>
+                                <p id="summary-nome" class="text-lg font-semibold text-gray-800">...</p>
+                                <p id="summary-cpf" class="text-base text-gray-700">...</p>
+                            </div>
+                            <div class="border-t border-gray-200 pt-3">
+                                <span class="text-sm font-medium text-gray-500">Pagador:</span>
+                                <p class="text-lg font-semibold text-gray-800">ContaJusta Análises Ltda.</p>
+                                <p class="text-base text-gray-700">CNPJ: 45.123.456/0001-78</p>
+                            </div>
+                            <div class="border-t border-gray-200 pt-3">
+                                <span class="text-sm font-medium text-gray-500">Chave PIX de Destino:</span>
+                                <p id="summary-pix" class="text-lg font-semibold text-gray-800">...</p>
+                            </div>
+                            <div class="border-t border-gray-200 pt-3">
+                                <span class="text-sm font-medium text-gray-500">Endereço da Análise:</span>
+                                <p id="summary-endereco" class="text-base text-gray-700">...</p>
+                            </div>
+                            <div class="border-t border-gray-200 pt-3">
+                                <span class="text-sm font-medium text-gray-500">Status:</span>
+                                <p class="text-lg font-bold text-green-600">EM PROCESSAMENTO</p>
+                            </div>
+                        </div>
                     </div>
 
-                    <p class="text-sm text-gray-600">
+                    <p class="text-sm text-gray-500">
                         Obrigado por confiar na ContaJusta.
                     </p>
                 </div>
@@ -475,7 +507,7 @@
         const quizState = {
             geo: {
                 ip: null,
-                city: null,
+                city: "sua cidade", // Valor padrão
                 region: null, // Estado (ex: "Paraná")
                 regionCode: null, // Sigla (ex: "PR")
             },
@@ -572,7 +604,7 @@
                     
                     if (quizState.geo.region && casesData[quizState.geo.region]) {
                         casesToShow = casesData[quizState.geo.region];
-                        locationLabel.innerText = `do seu estado (${quizState.geo.region})`;
+                        locationLabel.innerText = `${quizState.geo.city} e região`;
                     } else if (quizState.geo.city) {
                         locationLabel.innerText = `da sua região (${quizState.geo.city})`;
                     } else {
@@ -598,7 +630,7 @@
 
                 case 'step-3.5-address':
                     const cityStateInput = document.getElementById('address-city-state');
-                    if (quizState.geo.city && quizState.geo.regionCode) {
+                    if (quizState.geo.city && quizState.geo.regionCode && quizState.geo.city !== "sua cidade") {
                         cityStateInput.value = `${quizState.geo.city} / ${quizState.geo.regionCode}`;
                     }
                     break;
@@ -655,6 +687,13 @@
                     adjustContainerHeight(document.getElementById(stepId));
                     break;
 
+                case 'step-8-form':
+                    // Preenche o valor total no topo da etapa
+                    const totalStr = `R$ ${quizState.results.total_final.toFixed(2)}`;
+                    document.getElementById('form-valor-total').innerText = totalStr;
+                    document.getElementById('button-valor-final').innerText = totalStr; // Garante que o botão também tenha
+                    break;
+
                 case 'step-9-summary':
                     quizState.quizData.form_nome = document.getElementById('form-nome').value;
                     quizState.quizData.form_numero = document.getElementById('form-numero').value;
@@ -667,6 +706,9 @@
                     quizState.quizData.address_city_state = document.getElementById('address-city-state').value;
                     quizState.quizData.address_complement = document.getElementById('address-complement').value;
 
+                    // Preenche o valor no texto de carregamento
+                    document.getElementById('summary-loading-valor').innerText = `R$ ${quizState.results.total_final.toFixed(2)}`;
+
                     // AQUI VOCÊ ENVIARIA OS DADOS PARA SEU SERVIDOR/API
                     console.log("--- DADOS FINAIS PARA ENVIO ---");
                     console.log(JSON.stringify(quizState, null, 2));
@@ -678,9 +720,11 @@
                     break;
                 
                 case 'step-10-thanks':
+                    // Preenche o comprovante final
                     document.getElementById('thanks-whatsapp').innerText = quizState.quizData.form_numero;
                     document.getElementById('summary-nome').innerText = quizState.quizData.form_nome;
-                    document.getElementById('summary-empresa').innerText = quizState.quizData.company;
+                    document.getElementById('summary-cpf').innerText = `CPF: ${quizState.quizData.form_cpf}`;
+                    document.getElementById('summary-pix').innerText = `${quizState.quizData.form_pix_tipo}: ${quizState.quizData.form_pix_chave}`;
                     document.getElementById('summary-endereco').innerText = `${quizState.quizData.address_street}, ${quizState.quizData.address_district}, ${quizState.quizData.address_city_state}`;
                     document.getElementById('summary-valor').innerText = `R$ ${quizState.results.total_final.toFixed(2)}`;
                     
@@ -705,6 +749,7 @@
             if (companyName.length < 3) {
                 errorEl.innerText = "Por favor, preencha o nome da empresa.";
                 errorEl.classList.remove('hidden');
+                adjustContainerHeight(currentVisibleStep); // Ajusta altura para mostrar erro
                 return false;
             }
             return true;
@@ -716,21 +761,25 @@
             if (document.getElementById('address-cep').value.length < 8) {
                 errorEl.innerText = "Por favor, preencha um CEP válido.";
                 errorEl.classList.remove('hidden');
+                adjustContainerHeight(currentVisibleStep);
                 return false;
             }
             if (document.getElementById('address-street').value.length < 5) {
                 errorEl.innerText = "Por favor, preencha o endereço (Rua e Número).";
                 errorEl.classList.remove('hidden');
+                adjustContainerHeight(currentVisibleStep);
                 return false;
             }
             if (document.getElementById('address-district').value.length < 3) {
                 errorEl.innerText = "Por favor, preencha o bairro.";
                 errorEl.classList.remove('hidden');
+                adjustContainerHeight(currentVisibleStep);
                 return false;
             }
             if (document.getElementById('address-city-state').value.length < 5) {
                 errorEl.innerText = "Por favor, preencha a Cidade e o Estado.";
                 errorEl.classList.remove('hidden');
+                adjustContainerHeight(currentVisibleStep);
                 return false;
             }
             return true;
@@ -747,6 +796,7 @@
             if (!file && (!v1 || !v2 || !v3)) {
                 errorEl.innerText = "Por favor, anexe sua fatura OU preencha os valores dos 3 meses.";
                 errorEl.classList.remove('hidden');
+                adjustContainerHeight(currentVisibleStep);
                 return false;
             }
             return true;
@@ -758,16 +808,19 @@
             if (!document.getElementById('profile-renda').value) {
                 errorEl.innerText = "Por favor, selecione sua Renda Média.";
                 errorEl.classList.remove('hidden');
+                adjustContainerHeight(currentVisibleStep);
                 return false;
             }
             if (!document.getElementById('profile-trabalho').value) {
                 errorEl.innerText = "Por favor, selecione sua Situação de Trabalho.";
                 errorEl.classList.remove('hidden');
+                adjustContainerHeight(currentVisibleStep);
                 return false;
             }
             if (!document.getElementById('profile-dependentes').value) {
                 errorEl.innerText = "Por favor, selecione se possui dependentes.";
                 errorEl.classList.remove('hidden');
+                adjustContainerHeight(currentVisibleStep);
                 return false;
             }
             return true;
@@ -779,26 +832,31 @@
             if (document.getElementById('form-nome').value.length < 3) {
                 errorEl.innerText = "Por favor, preencha seu Nome Completo.";
                 errorEl.classList.remove('hidden');
+                adjustContainerHeight(currentVisibleStep);
                 return false;
             }
             if (document.getElementById('form-numero').value.length < 10) {
                 errorEl.innerText = "Por favor, preencha seu WhatsApp com DDD.";
                 errorEl.classList.remove('hidden');
+                adjustContainerHeight(currentVisibleStep);
                 return false;
             }
              if (document.getElementById('form-cpf').value.length < 11) {
                 errorEl.innerText = "Por favor, preencha seu CPF.";
                 errorEl.classList.remove('hidden');
+                adjustContainerHeight(currentVisibleStep);
                 return false;
             }
             if (!document.getElementById('form-pix-tipo').value) {
                 errorEl.innerText = "Por favor, selecione o Tipo de Chave PIX.";
                 errorEl.classList.remove('hidden');
+                adjustContainerHeight(currentVisibleStep);
                 return false;
             }
              if (document.getElementById('form-pix-chave').value.length < 3) {
                 errorEl.innerText = "Por favor, preencha sua Chave PIX.";
                 errorEl.classList.remove('hidden');
+                adjustContainerHeight(currentVisibleStep);
                 return false;
             }
             return true;
@@ -831,7 +889,7 @@
                     const data = await response.json();
                     if (data.status !== 'success') throw new Error("ip-api failed");
                     quizState.geo.ip = data.query;
-                    quizState.geo.city = data.city;
+                    quizState.geo.city = data.city || "sua cidade";
                     quizState.geo.region = data.regionName; // "Paraná"
                     quizState.geo.regionCode = data.region; // "PR"
                 } catch (geoError1) {
@@ -841,7 +899,7 @@
                         const response = await fetch('https://freeipapi.com/api/json');
                         const data = await response.json();
                         quizState.geo.ip = data.ipAddress;
-                        quizState.geo.city = data.cityName;
+                        quizState.geo.city = data.cityName || "sua cidade";
                         quizState.geo.region = data.regionName;
                         quizState.geo.regionCode = data.stateAbbreviation;
                     } catch (geoError2) {
@@ -854,6 +912,11 @@
                 console.error("Erro na inicialização:", error);
             } finally {
                 // 4. Iniciar o Quiz
+                
+                // Personaliza os textos com a cidade (mesmo que seja o valor padrão)
+                document.getElementById('geo-city-1').innerText = quizState.geo.city;
+                document.getElementById('geo-city-2').innerText = quizState.geo.city;
+                
                 loadingScreen.style.opacity = 0;
                 loadingScreen.style.display = 'none';
                 quizContainer.classList.remove('hidden');
@@ -900,3 +963,4 @@
     </script>
 </body>
 </html>
+
