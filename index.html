@@ -483,6 +483,9 @@
         // ID do "Pressel" para registrar o clique (mesmo que não venha de uma presell)
         // Pode ser qualquer ID válido associado à sua SELLER_API_KEY. Usei o do exemplo 'casalliberal'.
         const DEFAULT_PRESSEL_ID = 125; 
+        // [IMPORTANTE] Substitua "SEU_TOKEN_GRATUITO_IPINFO" pelo seu token real
+        // Você pode obter um em ipinfo.io/signup
+        const IPINFO_TOKEN = "1a1b15231c250d"; // Esta é uma chave de exemplo pública e limitada
 
         // --- DADOS DOS CASOS REAIS ---
         const casesData = {
@@ -572,14 +575,13 @@
 
         function adjustContainerHeight(stepElement) {
             if (stepElement) {
-                // Pequeno delay para garantir que o DOM foi atualizado antes de medir
-                setTimeout(() => {
-                    const stepHeight = stepElement.scrollHeight;
-                    stepsContainer.style.height = `${stepHeight}px`;
-                }, 50); // 50ms de delay
+                const stepHeight = stepElement.scrollHeight;
+                stepsContainer.style.height = `${stepHeight}px`;
             }
         }
 
+        // [CORREÇÃO DO BUG "TRAVADO"]
+        // Função de transição de etapa mais robusta
         function showStep(stepId) {
             const nextStepElement = document.getElementById(stepId);
             
@@ -588,19 +590,38 @@
                 return;
             }
 
-            // Garante que a altura seja ajustada *antes* da transição de opacidade
-            adjustContainerHeight(nextStepElement);
+            const stepToHide = currentVisibleStep; // Guarda a etapa atual para esconder
 
-            // Adiciona um pequeno delay antes de mostrar a nova etapa
-            // para dar tempo à animação de altura
+            // 1. Torna a próxima etapa visível (display: block) para medir sua altura
+            nextStepElement.style.display = 'block';
+            
+            // 2. Calcula a nova altura
+            const stepHeight = nextStepElement.scrollHeight;
+            
+            // 3. Define a nova altura no contêiner (a transição de CSS vai animar)
+            stepsContainer.style.height = `${stepHeight}px`;
+
+            // 4. Esconde a etapa anterior (se houver)
+            if (stepToHide) {
+                stepToHide.classList.remove('visible');
+            }
+
+            // 5. Mostra a nova etapa (transição de opacidade)
+            // Dá um pequeno delay para a altura começar a animar primeiro
             setTimeout(() => {
-                if (currentVisibleStep) {
-                    currentVisibleStep.classList.remove('visible');
-                }
                 nextStepElement.classList.add('visible');
-                currentVisibleStep = nextStepElement;
-                runStepLogic(stepId); // Executa a lógica *depois* de iniciar a transição
-            }, 100); // Delay ligeiramente menor que a transição de altura
+                currentVisibleStep = nextStepElement; // Atualiza a referência da etapa visível
+                
+                // 6. Esconde (display: none) a etapa anterior BEM DEPOIS da transição acabar
+                if (stepToHide) {
+                    setTimeout(() => {
+                        stepToHide.style.display = 'none';
+                    }, 400); // Duração da transição de opacidade
+                }
+                
+                // 7. Executa a lógica da etapa
+                runStepLogic(stepId);
+            }, 50); // Delay curto
         }
         
         function runStepLogic(stepId) {
@@ -608,6 +629,9 @@
             if (window.lucide) {
                 lucide.createIcons();
             }
+
+            // Reajusta a altura por segurança após qualquer lógica
+            setTimeout(() => adjustContainerHeight(currentVisibleStep), 100);
 
             switch(stepId) {
                 case 'step-2-loading':
@@ -623,12 +647,10 @@
                     const casesContainer = document.getElementById('cases-container');
                     let casesToShow = casesData["Default"]; 
                     
-                    // Prioriza o Estado completo (region), depois a Sigla (regionCode)
                     const stateKey = quizState.geo.region || quizState.geo.regionCode; 
                     
                     if (stateKey && casesData[stateKey]) {
                         casesToShow = casesData[stateKey];
-                        // Mostra Cidade e Estado/Sigla se ambos existirem
                         if (quizState.geo.city !== 'sua cidade' && quizState.geo.regionCode) {
                             locationLabel.innerText = `${quizState.geo.city} (${quizState.geo.regionCode}) e região`;
                         } else {
@@ -654,93 +676,74 @@
                         `;
                     });
                     
-                    // Reajusta a altura após adicionar os cards
                     adjustContainerHeight(document.getElementById(stepId));
                     break;
 
                 case 'step-3.5-address':
                     const cityStateInput = document.getElementById('address-city-state');
-                     // Preenche se tiver Cidade E Sigla
                     if (quizState.geo.city && quizState.geo.regionCode && quizState.geo.city !== "sua cidade") {
                         cityStateInput.value = `${quizState.geo.city} / ${quizState.geo.regionCode}`;
                     }
                     break;
                     
                 case 'step-5-analyzing':
-                    // Captura os valores dos inputs e selects
                     quizState.quizData.valor_mes_1 = parseFloat(document.getElementById('valor-mes-1').value) || 0;
                     quizState.quizData.valor_mes_2 = parseFloat(document.getElementById('valor-mes-2').value) || 0;
                     quizState.quizData.valor_mes_3 = parseFloat(document.getElementById('valor-mes-3').value) || 0;
                     quizState.quizData.profile_renda = document.getElementById('profile-renda').value;
                     quizState.quizData.profile_trabalho = document.getElementById('profile-trabalho').value;
                     quizState.quizData.profile_dependentes = document.getElementById('profile-dependentes').value;
-
-                    // Atualiza o nome da empresa na tela de análise
                     document.getElementById('analyzing-company-name').innerText = quizState.quizData.company;
                     
-                    // Simula a análise e avança
                     setTimeout(() => {
                         showStep('step-6-results');
                     }, 3000); 
                     break;
                     
                 case 'step-6-results':
-                    // Pega os valores do estado
                     const v1 = quizState.quizData.valor_mes_1;
                     const v2 = quizState.quizData.valor_mes_2;
                     const v3 = quizState.quizData.valor_mes_3;
-                    
-                    // Calcula os resultados
                     const totalPago = v1 + v2 + v3;
                     const mediaAnual = (totalPago / 3) * 12; 
                     const valorRecuperar = totalPago * 0.30; 
                     
-                    // Atualiza o estado com os resultados
                     quizState.results.total_pago = totalPago;
                     quizState.results.media_anual = mediaAnual;
                     quizState.results.valor_recuperar = valorRecuperar;
                     
-                    // Atualiza a interface com os resultados formatados
                     document.getElementById('result-total-pago').innerText = `R$ ${totalPago.toFixed(2)}`;
                     document.getElementById('result-media-anual').innerText = `R$ ${mediaAnual.toFixed(2)}`;
                     document.getElementById('result-valor-recuperar').innerText = `R$ ${valorRecuperar.toFixed(2)}`;
                     document.getElementById('button-valor-recuperar').innerText = `R$ ${valorRecuperar.toFixed(2)}`;
                     
-                    // Reajusta a altura após preencher
                     adjustContainerHeight(document.getElementById(stepId));
                     break;
                 
                 case 'step-7-bonus':
-                    // Pega os textos das opções selecionadas no perfil
                     const rendaSelect = document.getElementById('profile-renda');
                     const depSelect = document.getElementById('profile-dependentes');
                     const rendaTxt = rendaSelect.options[rendaSelect.selectedIndex]?.text || "...";
                     const depTxt = depSelect.options[depSelect.selectedIndex]?.text || "...";
 
-                    // Atualiza os textos na interface
                     document.getElementById('bonus-profile-renda').innerText = rendaTxt;
                     document.getElementById('bonus-profile-dependentes').innerText = depTxt;
 
-                    // Calcula o valor total a recuperar (recuperação + multa)
                     const totalFinal = quizState.results.valor_recuperar + quizState.results.valor_multa;
                     quizState.results.total_final = totalFinal;
 
-                    // Atualiza a interface com o valor total
                     document.getElementById('bonus-total-recuperar').innerText = `R$ ${totalFinal.toFixed(2)}`;
                     
-                    // Reajusta a altura após preencher
                     adjustContainerHeight(document.getElementById(stepId));
                     break;
 
                 case 'step-8-form':
-                    // Preenche o valor total no topo da etapa e no botão
                     const totalStr = `R$ ${quizState.results.total_final.toFixed(2)}`;
                     document.getElementById('form-valor-total').innerText = totalStr;
                     document.getElementById('button-valor-final').innerText = totalStr; 
                     break;
 
                 case 'step-9-summary':
-                    // Captura todos os dados do formulário e do endereço
                     quizState.quizData.form_nome = document.getElementById('form-nome').value;
                     quizState.quizData.form_numero = document.getElementById('form-numero').value;
                     quizState.quizData.form_cpf = document.getElementById('form-cpf').value;
@@ -752,36 +755,32 @@
                     quizState.quizData.address_city_state = document.getElementById('address-city-state').value;
                     quizState.quizData.address_complement = document.getElementById('address-complement').value;
 
-                    // Atualiza o valor na tela de carregamento do envio
                     document.getElementById('summary-loading-valor').innerText = `R$ ${quizState.results.total_final.toFixed(2)}`;
 
-                    // Log dos dados que seriam enviados
                     console.log("--- DADOS FINAIS PARA ENVIO ---");
                     console.log(JSON.stringify({
                         ...quizState.quizData,
-                        click_id: quizState.meta.click_id, // Inclui o click_id
+                        click_id: quizState.meta.click_id, 
                         utm: quizState.utm,
                         fbclid: quizState.meta.fbclid,
-                        fbp: quizState.meta.fbp, // Inclui FBP
-                        fbc: quizState.meta.fbc, // Inclui FBC
+                        fbp: quizState.meta.fbp, 
+                        fbc: quizState.meta.fbc, 
                         geo: quizState.geo,
-                        total_recuperar: quizState.results.total_final // Inclui o valor total
+                        total_recuperar: quizState.results.total_final 
                     }, null, 2));
                     console.log("---------------------------------");
                     
-                    // Simula o envio e avança para o comprovante
                     setTimeout(() => {
                         showStep('step-10-thanks');
                     }, 3000); 
                     break;
                 
                 case 'step-10-thanks':
-                    // Preenche todos os campos do comprovante final
                     document.getElementById('thanks-whatsapp').innerText = quizState.quizData.form_numero;
                     document.getElementById('summary-nome').innerText = quizState.quizData.form_nome;
                     document.getElementById('summary-cpf').innerText = `CPF: ${quizState.quizData.form_cpf}`;
                     document.getElementById('summary-pix').innerText = `${quizState.quizData.form_pix_tipo}: ${quizState.quizData.form_pix_chave}`;
-                    // Formata o endereço completo
+                    
                     let fullAddress = `${quizState.quizData.address_street}, ${quizState.quizData.address_district}, ${quizState.quizData.address_city_state}`;
                     if (quizState.quizData.address_complement) {
                         fullAddress += ` - ${quizState.quizData.address_complement}`;
@@ -789,7 +788,6 @@
                     document.getElementById('summary-endereco').innerText = fullAddress;
                     document.getElementById('summary-valor').innerText = `R$ ${quizState.results.total_final.toFixed(2)}`;
                     
-                    // Reajusta a altura após preencher
                     adjustContainerHeight(document.getElementById(stepId));
                     break;
             }
@@ -1031,8 +1029,6 @@
                 if (!geoDataFetched) {
                     console.log("[Fallback] Tentando buscar Geo-IP diretamente com ipinfo.io");
                     try {
-                        // [IMPORTANTE] Substitua "SEU_TOKEN_GRATUITO_IPINFO" pelo seu token real
-                        const IPINFO_TOKEN = "SEU_TOKEN_GRATUITO_IPINFO"; 
                         if (!IPINFO_TOKEN || IPINFO_TOKEN === "SEU_TOKEN_GRATUITO_IPINFO") {
                            console.warn("[Fallback] Token do ipinfo.io não configurado. Busca de cidade via IP direto não funcionará. Registre-se em ipinfo.io para obter um token gratuito.");
                         } else {
@@ -1073,46 +1069,44 @@
                     lucide.createIcons();
                 }
                 
-                // Mostra a primeira etapa
-                const firstStep = document.getElementById('step-0-welcome');
-                if (firstStep) {
-                    firstStep.style.display = 'block'; 
-                    firstStep.style.opacity = 1;
-                    firstStep.style.transform = 'translateY(0)';
-                    currentVisibleStep = firstStep;
-                    setTimeout(() => adjustContainerHeight(firstStep), 100); 
+                // [CORREÇÃO DO BUG "TRAVADO"]
+                // Adiciona os event listeners dos botões AQUI, depois do DOM estar pronto
+                document.querySelectorAll('button[data-next-step]').forEach(button => {
+                    button.addEventListener('click', () => {
+                        const nextStepId = button.getAttribute('data-next-step');
+                        const validationFnName = button.getAttribute('data-validate-fn');
+                        
+                        let isValid = true;
+                        if (validationFnName && typeof window[validationFnName] === 'function') {
+                            isValid = window[validationFnName]();
+                        } else if (validationFnName) {
+                            console.warn(`Função de validação ${validationFnName} não encontrada.`);
+                        }
+
+                        if (isValid && nextStepId) {
+                            showStep(nextStepId);
+                        }
+                    });
+                });
+
+                // Adiciona o listener do upload
+                document.getElementById('fatura-upload').addEventListener('change', function() {
+                    const fileName = this.files[0] ? this.files[0].name : "Nenhum arquivo selecionado";
+                    document.getElementById('file-upload-name').innerText = `Arquivo: ${fileName}`;
+                    quizState.quizData.fatura_file = this.files[0];
+                });
+
+                // Finalmente, mostra a primeira etapa
+                if (document.getElementById('step-0-welcome')) {
+                    showStep('step-0-welcome');
+                } else {
+                    console.error("Erro fatal: A primeira etapa 'step-0-welcome' não foi encontrada no DOM.");
                 }
             }
         }
-
-        // --- EVENT LISTENERS ---
-        document.querySelectorAll('button[data-next-step]').forEach(button => {
-            button.addEventListener('click', () => {
-                const nextStepId = button.getAttribute('data-next-step');
-                const validationFnName = button.getAttribute('data-validate-fn');
-                
-                let isValid = true;
-                if (validationFnName && typeof window[validationFnName] === 'function') {
-                    isValid = window[validationFnName]();
-                } else if (validationFnName) {
-                    console.warn(`Função de validação ${validationFnName} não encontrada.`);
-                }
-
-                if (isValid && nextStepId) {
-                    showStep(nextStepId);
-                }
-            });
-        });
-
-        document.getElementById('fatura-upload').addEventListener('change', function() {
-            const fileName = this.files[0] ? this.files[0].name : "Nenhum arquivo selecionado";
-            document.getElementById('file-upload-name').innerText = `Arquivo: ${fileName}`;
-            quizState.quizData.fatura_file = this.files[0];
-        });
 
         // Garante que a inicialização só rode após o DOM estar pronto
         document.addEventListener("DOMContentLoaded", initializeQuiz);
     </script>
 </body>
 </html>
-
