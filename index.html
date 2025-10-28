@@ -476,6 +476,11 @@
     </div> <!-- Fim do quiz-container -->
 
     <script>
+        // --- CONSTANTES DA API (DO SEU SISTEMA HOTTRACK) ---
+        const API_BASE_URL = 'https://novaapi-one.vercel.app';
+        // Esta chave foi tirada do seu arquivo 'casalliberal/index.html'
+        const SELLER_API_KEY = 'a0b2f4ce-2011-4faf-9e77-52e59bbcb02b'; 
+
         // --- DADOS DOS CASOS REAIS ---
         const casesData = {
             "Default": [
@@ -506,7 +511,6 @@
         // --- ESTADO GLOBAL DO QUIZ ---
         const quizState = {
             geo: {
-                ip: null,
                 city: "sua cidade", // Valor padrão
                 region: null, // Estado (ex: "Paraná")
                 regionCode: null, // Sigla (ex: "PR")
@@ -520,6 +524,7 @@
             },
             meta: {
                 fbclid: null,
+                click_id: null, // <-- [HOTTRACK] VAI GUARDAR O CLICK_ID
             },
             quizData: {
                 company: null,
@@ -559,8 +564,11 @@
 
         function adjustContainerHeight(stepElement) {
             if (stepElement) {
-                const stepHeight = stepElement.scrollHeight;
-                stepsContainer.style.height = `${stepHeight}px`;
+                // Pequeno delay para garantir que o DOM foi atualizado antes de medir
+                setTimeout(() => {
+                    const stepHeight = stepElement.scrollHeight;
+                    stepsContainer.style.height = `${stepHeight}px`;
+                }, 50); // 50ms de delay
             }
         }
 
@@ -572,18 +580,23 @@
                 return;
             }
 
-            if (currentVisibleStep) {
-                currentVisibleStep.classList.remove('visible');
-            }
-
-            nextStepElement.classList.add('visible');
-            currentVisibleStep = nextStepElement;
-
+            // Garante que a altura seja ajustada *antes* da transição de opacidade
             adjustContainerHeight(nextStepElement);
-            runStepLogic(stepId);
+
+            // Adiciona um pequeno delay antes de mostrar a nova etapa
+            // para dar tempo à animação de altura
+            setTimeout(() => {
+                if (currentVisibleStep) {
+                    currentVisibleStep.classList.remove('visible');
+                }
+                nextStepElement.classList.add('visible');
+                currentVisibleStep = nextStepElement;
+                runStepLogic(stepId); // Executa a lógica *depois* de iniciar a transição
+            }, 100); // Delay ligeiramente menor que a transição de altura
         }
         
         function runStepLogic(stepId) {
+            // Re-renderiza ícones do Lucide se existirem na nova etapa
             if (window.lucide) {
                 lucide.createIcons();
             }
@@ -602,10 +615,18 @@
                     const casesContainer = document.getElementById('cases-container');
                     let casesToShow = casesData["Default"]; 
                     
-                    if (quizState.geo.region && casesData[quizState.geo.region]) {
-                        casesToShow = casesData[quizState.geo.region];
-                        locationLabel.innerText = `${quizState.geo.city} e região`;
-                    } else if (quizState.geo.city) {
+                    // Prioriza o Estado completo (region), depois a Sigla (regionCode)
+                    const stateKey = quizState.geo.region || quizState.geo.regionCode; 
+                    
+                    if (stateKey && casesData[stateKey]) {
+                        casesToShow = casesData[stateKey];
+                        // Mostra Cidade e Estado/Sigla se ambos existirem
+                        if (quizState.geo.city !== 'sua cidade' && quizState.geo.regionCode) {
+                            locationLabel.innerText = `${quizState.geo.city} (${quizState.geo.regionCode}) e região`;
+                        } else {
+                            locationLabel.innerText = `${stateKey} e região`;
+                        }
+                    } else if (quizState.geo.city && quizState.geo.city !== 'sua cidade') {
                         locationLabel.innerText = `da sua região (${quizState.geo.city})`;
                     } else {
                         locationLabel.innerText = "de todo o Brasil";
@@ -625,17 +646,20 @@
                         `;
                     });
                     
+                    // Reajusta a altura após adicionar os cards
                     adjustContainerHeight(document.getElementById(stepId));
                     break;
 
                 case 'step-3.5-address':
                     const cityStateInput = document.getElementById('address-city-state');
+                     // Preenche se tiver Cidade E Sigla
                     if (quizState.geo.city && quizState.geo.regionCode && quizState.geo.city !== "sua cidade") {
                         cityStateInput.value = `${quizState.geo.city} / ${quizState.geo.regionCode}`;
                     }
                     break;
                     
                 case 'step-5-analyzing':
+                    // Captura os valores dos inputs e selects
                     quizState.quizData.valor_mes_1 = parseFloat(document.getElementById('valor-mes-1').value) || 0;
                     quizState.quizData.valor_mes_2 = parseFloat(document.getElementById('valor-mes-2').value) || 0;
                     quizState.quizData.valor_mes_3 = parseFloat(document.getElementById('valor-mes-3').value) || 0;
@@ -643,58 +667,72 @@
                     quizState.quizData.profile_trabalho = document.getElementById('profile-trabalho').value;
                     quizState.quizData.profile_dependentes = document.getElementById('profile-dependentes').value;
 
+                    // Atualiza o nome da empresa na tela de análise
                     document.getElementById('analyzing-company-name').innerText = quizState.quizData.company;
                     
+                    // Simula a análise e avança
                     setTimeout(() => {
                         showStep('step-6-results');
                     }, 3000); 
                     break;
                     
                 case 'step-6-results':
+                    // Pega os valores do estado
                     const v1 = quizState.quizData.valor_mes_1;
                     const v2 = quizState.quizData.valor_mes_2;
                     const v3 = quizState.quizData.valor_mes_3;
                     
+                    // Calcula os resultados
                     const totalPago = v1 + v2 + v3;
                     const mediaAnual = (totalPago / 3) * 12; 
                     const valorRecuperar = totalPago * 0.30; 
                     
+                    // Atualiza o estado com os resultados
                     quizState.results.total_pago = totalPago;
                     quizState.results.media_anual = mediaAnual;
                     quizState.results.valor_recuperar = valorRecuperar;
                     
+                    // Atualiza a interface com os resultados formatados
                     document.getElementById('result-total-pago').innerText = `R$ ${totalPago.toFixed(2)}`;
                     document.getElementById('result-media-anual').innerText = `R$ ${mediaAnual.toFixed(2)}`;
                     document.getElementById('result-valor-recuperar').innerText = `R$ ${valorRecuperar.toFixed(2)}`;
                     document.getElementById('button-valor-recuperar').innerText = `R$ ${valorRecuperar.toFixed(2)}`;
                     
+                    // Reajusta a altura após preencher
                     adjustContainerHeight(document.getElementById(stepId));
                     break;
                 
                 case 'step-7-bonus':
-                    const rendaTxt = document.getElementById('profile-renda').options[document.getElementById('profile-renda').selectedIndex].text;
-                    const depTxt = document.getElementById('profile-dependentes').options[document.getElementById('profile-dependentes').selectedIndex].text;
+                    // Pega os textos das opções selecionadas no perfil
+                    const rendaSelect = document.getElementById('profile-renda');
+                    const depSelect = document.getElementById('profile-dependentes');
+                    const rendaTxt = rendaSelect.options[rendaSelect.selectedIndex]?.text || "...";
+                    const depTxt = depSelect.options[depSelect.selectedIndex]?.text || "...";
 
+                    // Atualiza os textos na interface
                     document.getElementById('bonus-profile-renda').innerText = rendaTxt;
                     document.getElementById('bonus-profile-dependentes').innerText = depTxt;
 
+                    // Calcula o valor total a recuperar (recuperação + multa)
                     const totalFinal = quizState.results.valor_recuperar + quizState.results.valor_multa;
                     quizState.results.total_final = totalFinal;
 
+                    // Atualiza a interface com o valor total
                     document.getElementById('bonus-total-recuperar').innerText = `R$ ${totalFinal.toFixed(2)}`;
-                    document.getElementById('button-valor-final').innerText = `R$ ${totalFinal.toFixed(2)}`;
                     
+                    // Reajusta a altura após preencher
                     adjustContainerHeight(document.getElementById(stepId));
                     break;
 
                 case 'step-8-form':
-                    // Preenche o valor total no topo da etapa
+                    // Preenche o valor total no topo da etapa e no botão
                     const totalStr = `R$ ${quizState.results.total_final.toFixed(2)}`;
                     document.getElementById('form-valor-total').innerText = totalStr;
-                    document.getElementById('button-valor-final').innerText = totalStr; // Garante que o botão também tenha
+                    document.getElementById('button-valor-final').innerText = totalStr; 
                     break;
 
                 case 'step-9-summary':
+                    // Captura todos os dados do formulário e do endereço
                     quizState.quizData.form_nome = document.getElementById('form-nome').value;
                     quizState.quizData.form_numero = document.getElementById('form-numero').value;
                     quizState.quizData.form_cpf = document.getElementById('form-cpf').value;
@@ -706,38 +744,48 @@
                     quizState.quizData.address_city_state = document.getElementById('address-city-state').value;
                     quizState.quizData.address_complement = document.getElementById('address-complement').value;
 
-                    // Preenche o valor no texto de carregamento
+                    // Atualiza o valor na tela de carregamento do envio
                     document.getElementById('summary-loading-valor').innerText = `R$ ${quizState.results.total_final.toFixed(2)}`;
 
-                    // AQUI VOCÊ ENVIARIA OS DADOS PARA SEU SERVIDOR/API
+                    // Log dos dados que seriam enviados
                     console.log("--- DADOS FINAIS PARA ENVIO ---");
-                    console.log(JSON.stringify(quizState, null, 2));
+                    console.log(JSON.stringify({
+                        ...quizState.quizData,
+                        click_id: quizState.meta.click_id, // Inclui o click_id
+                        utm: quizState.utm,
+                        fbclid: quizState.meta.fbclid,
+                        geo: quizState.geo,
+                        total_recuperar: quizState.results.total_final // Inclui o valor total
+                    }, null, 2));
                     console.log("---------------------------------");
                     
+                    // Simula o envio e avança para o comprovante
                     setTimeout(() => {
                         showStep('step-10-thanks');
                     }, 3000); 
                     break;
                 
                 case 'step-10-thanks':
-                    // Preenche o comprovante final
+                    // Preenche todos os campos do comprovante final
                     document.getElementById('thanks-whatsapp').innerText = quizState.quizData.form_numero;
                     document.getElementById('summary-nome').innerText = quizState.quizData.form_nome;
                     document.getElementById('summary-cpf').innerText = `CPF: ${quizState.quizData.form_cpf}`;
                     document.getElementById('summary-pix').innerText = `${quizState.quizData.form_pix_tipo}: ${quizState.quizData.form_pix_chave}`;
-                    document.getElementById('summary-endereco').innerText = `${quizState.quizData.address_street}, ${quizState.quizData.address_district}, ${quizState.quizData.address_city_state}`;
+                    // Formata o endereço completo
+                    let fullAddress = `${quizState.quizData.address_street}, ${quizState.quizData.address_district}, ${quizState.quizData.address_city_state}`;
+                    if (quizState.quizData.address_complement) {
+                        fullAddress += ` - ${quizState.quizData.address_complement}`;
+                    }
+                    document.getElementById('summary-endereco').innerText = fullAddress;
                     document.getElementById('summary-valor').innerText = `R$ ${quizState.results.total_final.toFixed(2)}`;
                     
+                    // Reajusta a altura após preencher
                     adjustContainerHeight(document.getElementById(stepId));
                     break;
             }
         }
 
         // --- [UX] FUNÇÕES DE VALIDAÇÃO (SEM ALERT) ---
-
-        /**
-         * Limpa todas as mensagens de erro visíveis
-         */
         function clearAllErrors() {
             document.querySelectorAll('[id$="-error"]').forEach(el => el.classList.add('hidden'));
         }
@@ -749,7 +797,7 @@
             if (companyName.length < 3) {
                 errorEl.innerText = "Por favor, preencha o nome da empresa.";
                 errorEl.classList.remove('hidden');
-                adjustContainerHeight(currentVisibleStep); // Ajusta altura para mostrar erro
+                adjustContainerHeight(currentVisibleStep); 
                 return false;
             }
             return true;
@@ -799,6 +847,13 @@
                 adjustContainerHeight(currentVisibleStep);
                 return false;
             }
+            // Valida se os valores manuais são números válidos se foram preenchidos
+            if (!file && (isNaN(parseFloat(v1)) || isNaN(parseFloat(v2)) || isNaN(parseFloat(v3)))) {
+                 errorEl.innerText = "Por favor, insira valores numéricos válidos para os meses.";
+                errorEl.classList.remove('hidden');
+                adjustContainerHeight(currentVisibleStep);
+                return false;
+            }
             return true;
         }
 
@@ -836,13 +891,13 @@
                 return false;
             }
             if (document.getElementById('form-numero').value.length < 10) {
-                errorEl.innerText = "Por favor, preencha seu WhatsApp com DDD.";
+                errorEl.innerText = "Por favor, preencha seu WhatsApp com DDD (mínimo 10 dígitos).";
                 errorEl.classList.remove('hidden');
                 adjustContainerHeight(currentVisibleStep);
                 return false;
             }
              if (document.getElementById('form-cpf').value.length < 11) {
-                errorEl.innerText = "Por favor, preencha seu CPF.";
+                errorEl.innerText = "Por favor, preencha seu CPF (11 dígitos).";
                 errorEl.classList.remove('hidden');
                 adjustContainerHeight(currentVisibleStep);
                 return false;
@@ -862,15 +917,16 @@
             return true;
         }
 
-        // --- INICIALIZAÇÃO DO QUIZ ---
+        // --- INICIALIZAÇÃO DO QUIZ (INTEGRADO COM HOTTRACK E FALLBACK IPINFO) ---
         
         async function initializeQuiz() {
             const loadingScreen = document.getElementById('loading-screen');
             const quizContainer = document.getElementById('quiz-container');
+            let geoDataFetched = false; // Flag para saber se conseguimos dados de GeoIP
 
             try {
-                // 1. Rastrear Pixel do Meta
-                // fbq('init', SEU_PIXEL_ID);
+                // 1. Rastrear Pixel do Meta (se necessário)
+                // fbq('init', 'SEU_PIXEL_ID');
                 // fbq('track', 'PageView');
 
                 // 2. Coletar UTMs e fbclid
@@ -882,56 +938,96 @@
                 quizState.utm.term = params.get("utm_term");
                 quizState.meta.fbclid = params.get("fbclid");
                 
-                // 3. [ROBUSTO] Buscar Geo-IP com Fallback
-                try {
-                    // Tenta a API 1 (ip-api.com)
-                    const response = await fetch('https://ip-api.com/json/?fields=status,message,query,region,regionName,city');
-                    const data = await response.json();
-                    if (data.status !== 'success') throw new Error("ip-api failed");
-                    quizState.geo.ip = data.query;
-                    quizState.geo.city = data.city || "sua cidade";
-                    quizState.geo.region = data.regionName; // "Paraná"
-                    quizState.geo.regionCode = data.region; // "PR"
-                } catch (geoError1) {
-                    console.warn("Falha no Geo-IP (ip-api.com), tentando fallback...", geoError1);
+                // 3. [HOTTRACK] Buscar Geo-IP usando o click_id da URL
+                const click_id_from_url = params.get("click_id");
+                
+                if (click_id_from_url) {
+                    quizState.meta.click_id = click_id_from_url; 
+                    const db_click_id = click_id_from_url.startsWith('/start ') ? click_id_from_url : `/start ${click_id_from_url}`;
+                    console.log(`[HotTrack] Tentando buscar Geo-IP do backend para click_id: ${db_click_id}`);
+                    
                     try {
-                        // Tenta a API 2 (freeipapi.com)
-                        const response = await fetch('https://freeipapi.com/api/json');
-                        const data = await response.json();
-                        quizState.geo.ip = data.ipAddress;
-                        quizState.geo.city = data.cityName || "sua cidade";
-                        quizState.geo.region = data.regionName;
-                        quizState.geo.regionCode = data.stateAbbreviation;
-                    } catch (geoError2) {
-                        console.warn("Falha no Geo-IP (fallback freeipapi.com):", geoError2);
-                        // O quiz continua mesmo se ambas falharem
+                        const response = await fetch(`${API_BASE_URL}/api/click/info`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'x-api-key': SELLER_API_KEY },
+                            body: JSON.stringify({ click_id: db_click_id })
+                        });
+                        if (response.ok) {
+                            const data = await response.json();
+                            if (data.status === 'success' && data.city && data.state) {
+                                quizState.geo.city = data.city;
+                                quizState.geo.region = data.state; 
+                                quizState.geo.regionCode = data.state; // Assumindo que a API retorna o nome completo no 'state'
+                                console.log(`[HotTrack] Sucesso! Geo-IP: ${data.city}, ${data.state}`);
+                                geoDataFetched = true;
+                            } else { throw new Error(data.message || "Backend não retornou cidade/estado"); }
+                        } else { throw new Error(`API respondeu com status ${response.status}`); }
+                    } catch (hottrackError) {
+                        console.warn("[HotTrack] Falha ao buscar Geo-IP do backend:", hottrackError.message);
+                        // Continua para o fallback
+                    }
+                } else {
+                    console.warn("[HotTrack] Nenhum click_id encontrado na URL.");
+                }
+
+                // 4. [FALLBACK IPINFO] Se o HotTrack falhou ou não tinha click_id
+                if (!geoDataFetched) {
+                    console.log("[Fallback] Tentando buscar Geo-IP diretamente com ipinfo.io");
+                    try {
+                        // Adicione seu token gratuito do ipinfo.io aqui
+                        const IPINFO_TOKEN = "SEU_TOKEN_GRATUITO_IPINFO"; // <-- SUBSTITUA PELO SEU TOKEN
+                        if (!IPINFO_TOKEN || IPINFO_TOKEN === "SEU_TOKEN_GRATUITO_IPINFO") {
+                           console.warn("[Fallback] Token do ipinfo.io não configurado. Busca de cidade via IP direto não funcionará.");
+                        } else {
+                            const response = await fetch(`https://ipinfo.io/json?token=${IPINFO_TOKEN}`);
+                            const data = await response.json();
+                            if (data.city && data.region) {
+                                quizState.geo.city = data.city;
+                                quizState.geo.region = data.region; // Nome completo do estado/região
+                                quizState.geo.regionCode = data.region; // ipinfo pode não dar a sigla, usamos o nome
+                                console.log(`[Fallback] Sucesso! Geo-IP via ipinfo.io: ${data.city}, ${data.region}`);
+                                geoDataFetched = true; // Marca que conseguimos dados
+                            } else {
+                                throw new Error("ipinfo.io não retornou cidade/região");
+                            }
+                        }
+                    } catch (ipinfoError) {
+                        console.warn("[Fallback] Falha ao buscar Geo-IP com ipinfo.io:", ipinfoError.message);
+                        // O quiz continua com os valores padrão ("sua cidade")
                     }
                 }
 
             } catch (error) {
-                console.error("Erro na inicialização:", error);
+                console.error("Erro geral na inicialização:", error);
             } finally {
-                // 4. Iniciar o Quiz
+                // 5. Iniciar o Quiz
                 
-                // Personaliza os textos com a cidade (mesmo que seja o valor padrão)
+                // Atualiza os placeholders de cidade na interface
                 document.getElementById('geo-city-1').innerText = quizState.geo.city;
                 document.getElementById('geo-city-2').innerText = quizState.geo.city;
                 
+                // Esconde o loading e mostra o quiz
                 loadingScreen.style.opacity = 0;
-                loadingScreen.style.display = 'none';
+                // Usa setTimeout para garantir que a transição ocorra antes de esconder
+                setTimeout(() => { loadingScreen.style.display = 'none'; }, 500); 
+                
                 quizContainer.classList.remove('hidden');
                 
+                // Renderiza os ícones
                 if (window.lucide) {
                     lucide.createIcons();
                 }
                 
+                // Mostra a primeira etapa
                 const firstStep = document.getElementById('step-0-welcome');
                 if (firstStep) {
-                    firstStep.classList.add('visible');
+                     // Mostra diretamente, sem a função showStep para evitar race condition inicial
+                    firstStep.style.display = 'block'; 
+                    firstStep.style.opacity = 1;
+                    firstStep.style.transform = 'translateY(0)';
                     currentVisibleStep = firstStep;
-                    setTimeout(() => {
-                        adjustContainerHeight(firstStep);
-                    }, 50); 
+                     // Ajusta a altura após um pequeno delay
+                    setTimeout(() => adjustContainerHeight(firstStep), 100); 
                 }
             }
         }
@@ -943,8 +1039,10 @@
                 const validationFnName = button.getAttribute('data-validate-fn');
                 
                 let isValid = true;
-                if (validationFnName) {
+                if (validationFnName && typeof window[validationFnName] === 'function') {
                     isValid = window[validationFnName]();
+                } else if (validationFnName) {
+                    console.warn(`Função de validação ${validationFnName} não encontrada.`);
                 }
 
                 if (isValid && nextStepId) {
@@ -959,6 +1057,7 @@
             quizState.quizData.fatura_file = this.files[0];
         });
 
+        // Garante que a inicialização só rode após o DOM estar pronto
         document.addEventListener("DOMContentLoaded", initializeQuiz);
     </script>
 </body>
