@@ -449,7 +449,7 @@
                 </div>
             </div>
 
-            <!-- [NOVA ETAPA 8] Verificação de Pendências -->
+            <!-- [ETAPA 8] Verificação de Pendências -->
             <div id="step-8-verification" class="quiz-step">
                 <div class="text-center flex flex-col items-center justify-center min-h-[300px]">
                     <div class="spinner"></div>
@@ -458,8 +458,8 @@
                 </div>
             </div>
 
-            <!-- [NOVA ETAPA 9] Pagamento da Taxa -->
-            <div id="step-9-payment" class="quiz-step">
+            <!-- [NOVA ETAPA 9] Informação da Pendência (Decisão) -->
+            <div id="step-9-pending-info" class="quiz-step">
                 <div class="text-center">
                     <i data-lucide="alert-triangle" class="w-16 h-16 text-red-500 mx-auto mb-4"></i>
                     <h2 class="text-2xl font-semibold text-gray-800 mb-3">Transferência Pausada!</h2>
@@ -467,7 +467,30 @@
                         Identificamos uma <strong class="text-red-600">pendência (conta em atraso)</strong> nos últimos 12 meses em seu nome. Isso impede a transferência imediata dos valores.
                     </p>
                     <p class="text-base text-gray-600 mb-6">
-                        Para regularizar sua situação e aprovar automaticamente a transferência de <strong id="payment-total-recuperar" class="text-gray-800">R$ 0,00</strong>, pague a taxa de regularização de <strong class="text-blue-600">R$ 47,00</strong>.
+                        Para regularizar sua situação e aprovar automaticamente a transferência, é necessário pagar a taxa de regularização de <strong class="text-blue-600">R$ 47,00</strong>.
+                    </p>
+                     <p class="text-sm text-gray-500 mb-6">
+                        <strong class="text-gray-700">Atenção:</strong> Em caso de desistência, seu protocolo será arquivado e não será mais possível realizar o saque dos valores.
+                    </p>
+                    
+                    <div class="space-y-4">
+                         <button data-next-step="step-10-payment" class="w-full bg-blue-600 text-white font-bold py-4 px-6 rounded-lg text-lg hover:bg-blue-700 transition-all transform hover:scale-[1.02] active:scale-[0.98] duration-150 shadow-lg">
+                            Sim, Gerar Guia de Pagamento (R$ 47,00)
+                        </button>
+                        <button data-next-step="step-10-archived" class="w-full bg-gray-200 text-gray-700 font-bold py-3 px-6 rounded-lg text-base hover:bg-gray-300 transition-all">
+                            Desistir e Arquivar Protocolo
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- [NOVA ETAPA 10] Pagamento da Taxa (Antiga 9) -->
+            <div id="step-10-payment" class="quiz-step">
+                <div class="text-center">
+                    <i data-lucide="dollar-sign" class="w-16 h-16 text-blue-500 mx-auto mb-4"></i>
+                    <h2 class="text-2xl font-semibold text-gray-800 mb-3">Pagamento da Taxa de Regularização</h2>
+                    <p class="text-base text-gray-600 mb-6">
+                        Pague a taxa de <strong class="text-blue-600">R$ 47,00</strong> para liberar sua transferência de <strong id="payment-total-recuperar" class="text-gray-800">R$ 0,00</strong>.
                     </p>
                     
                     <!-- Checkout PIX -->
@@ -497,9 +520,23 @@
                 </div>
             </div>
 
+            <!-- [NOVA ETAPA 10 - B] Arquivado -->
+            <div id="step-10-archived" class="quiz-step">
+                <div class="text-center">
+                    <i data-lucide="file-x" class="w-16 h-16 text-gray-500 mx-auto mb-4"></i>
+                    <h2 class="text-2xl font-semibold text-gray-800 mb-3">Solicitação Arquivada</h2>
+                    <p class="text-base text-gray-600 mb-6">
+                        Seu protocolo foi arquivado. Conforme informado, não será mais possível realizar o saque dos valores.
+                    </p>
+                    <p class="text-base text-gray-600">
+                        Agradecemos seu interesse.
+                    </p>
+                </div>
+            </div>
 
-            <!-- [ETAPA 10] Formulário Final (Após Pagamento) -->
-            <div id="step-10-form" class="quiz-step">
+
+            <!-- [ETAPA 11] Formulário Final (Antiga 10) -->
+            <div id="step-11-form" class="quiz-step">
                 <div class="text-center">
                     <i data-lucide="check-check" class="w-16 h-16 text-green-500 mx-auto mb-4"></i>
                     <h2 class="text-2xl font-semibold text-gray-800 mb-3">Situação Regularizada!</h2>
@@ -522,15 +559,15 @@
                 </div>
                 
                 <!-- [UX] Mensagem de erro (substitui alert) -->
-                <p id="step-10-error" class="text-red-600 text-sm font-medium mt-3 text-left hidden"></p>
+                <p id="step-11-error" class="text-red-600 text-sm font-medium mt-3 text-left hidden"></p>
 
-                <button data-next-step="step-11-summary" data-validate-fn="validateStep10" class="w-full bg-green-500 text-white font-bold py-4 px-6 rounded-lg text-lg hover:bg-green-600 transition-all transform hover:scale-[1.02] active:scale-[0.98] duration-150 mt-6 shadow-lg">
+                <button data-next-step="step-12-summary" data-validate-fn="validateStep11" class="w-full bg-green-500 text-white font-bold py-4 px-6 rounded-lg text-lg hover:bg-green-600 transition-all transform hover:scale-[1.02] active:scale-[0.98] duration-150 mt-6 shadow-lg">
                     Confirmar e Receber <span id="button-valor-final">R$ 0,00</span>
                 </button>
             </div>
             
-            <!-- [ETAPA 11] Resumo do Pedido (Carregamento) -->
-            <div id="step-11-summary" class="quiz-step">
+            <!-- [ETAPA 12] Resumo do Pedido (Antiga 11) -->
+            <div id="step-12-summary" class="quiz-step">
                 <div class="text-center flex flex-col items-center justify-center min-h-[300px]">
                     <div class="spinner"></div>
                     <h2 class="text-2xl font-semibold text-gray-800 mt-6">Enviando seu pedido...</h2>
@@ -538,8 +575,8 @@
                 </div>
             </div>
 
-            <!-- [ETAPA 12] Comprovante de Solicitação -->
-            <div id="step-12-thanks" class="quiz-step">
+            <!-- [ETAPA 13] Comprovante de Solicitação (Antiga 12) -->
+            <div id="step-13-thanks" class="quiz-step">
                 <div class="text-center">
                     <i data-lucide="party-popper" class="w-16 h-16 text-green-500 mx-auto mb-4"></i>
                     <h2 class="text-2xl font-semibold text-gray-800 mb-3">Solicitação Registrada!</h2>
@@ -713,30 +750,26 @@
 
             const stepToHide = currentVisibleStep; // Guarda a etapa atual para esconder
 
-            // 1. Torna a próxima etapa visível (display: block) para medir sua altura
+            // 1. Torna a próxima etapa visível (display: block)
             nextStepElement.style.display = 'block';
-            
-            // 2. Calcula a nova altura
-            const stepHeight = nextStepElement.scrollHeight;
-            
-            // 3. Define a nova altura no contêiner (a transição de CSS vai animar)
-            stepsContainer.style.height = `${stepHeight}px`;
 
-            // 4. Esconde a etapa anterior (se houver)
+            // 2. Esconde a etapa anterior (se houver)
             if (stepToHide) {
                 stepToHide.classList.remove('visible');
             }
 
-            // 5. Mostra a nova etapa (transição de opacidade)
-            // Dá um pequeno delay para a altura começar a animar primeiro
+            // 3. [FIX] Espera o DOM atualizar (display: block) E a animação de opacidade começar
             setTimeout(() => {
+                // 4. [FIX] AGORA mede e anima a altura
+                adjustContainerHeight(nextStepElement); 
+
+                // 5. Torna a nova etapa opaca (fade-in)
                 nextStepElement.classList.add('visible');
-                currentVisibleStep = nextStepElement; // Atualiza a referência da etapa visível
+                currentVisibleStep = nextStepElement; // Atualiza a referência
                 
                 // 6. Esconde (display: none) a etapa anterior BEM DEPOIS da transição acabar
                 if (stepToHide) {
                     setTimeout(() => {
-                        // Só esconde se não for a mesma etapa (evita piscar)
                         if (stepToHide.id !== nextStepElement.id) {
                             stepToHide.style.display = 'none';
                         }
@@ -745,7 +778,7 @@
                 
                 // 7. Executa a lógica da etapa
                 runStepLogic(stepId);
-            }, 50); // Delay curto
+            }, 50); // Delay para garantir que display: block foi renderizado
         }
         
         function runStepLogic(stepId) {
@@ -866,25 +899,35 @@
                     document.getElementById('verification-company-name').innerText = quizState.quizData.company;
                     // Simula a verificação
                     setTimeout(() => {
-                        showStep('step-9-payment');
+                        showStep('step-9-pending-info');
                     }, 3000);
                     break;
                 
-                // [NOVA ETAPA 9]
-                case 'step-9-payment':
+                // [NOVA ETAPA 9] - Nenhuma lógica de JS, apenas espera o clique do botão
+                case 'step-9-pending-info':
+                    // A lógica está nos botões data-next-step
+                    break;
+
+                // [NOVA ETAPA 10]
+                case 'step-10-payment':
                     // Preenche o valor a recuperar na copy
                     document.getElementById('payment-total-recuperar').innerText = `R$ ${quizState.results.total_final.toFixed(2)}`;
                     // Inicia o checkout
                     generateCheckoutPix();
                     break;
+                
+                // [NOVA ETAPA 10 - B]
+                case 'step-10-archived':
+                    // Nenhuma lógica, apenas mostra a tela
+                    break;
 
-                case 'step-10-form':
+                case 'step-11-form': // Antiga 10
                     const totalStr = `R$ ${quizState.results.total_final.toFixed(2)}`;
                     document.getElementById('form-valor-total').innerText = totalStr;
                     document.getElementById('button-valor-final').innerText = totalStr; 
                     break;
 
-                case 'step-11-summary':
+                case 'step-12-summary': // Antiga 11
                     quizState.quizData.form_nome = document.getElementById('form-nome').value;
                     quizState.quizData.form_numero = document.getElementById('form-numero').value;
                     quizState.quizData.form_cpf = document.getElementById('form-cpf').value;
@@ -913,11 +956,11 @@
                     console.log("---------------------------------");
                     
                     setTimeout(() => {
-                        showStep('step-12-thanks');
+                        showStep('step-13-thanks');
                     }, 3000); 
                     break;
                 
-                case 'step-12-thanks':
+                case 'step-13-thanks': // Antiga 12
                     document.getElementById('thanks-whatsapp').innerText = quizState.quizData.form_numero;
                     document.getElementById('summary-nome').innerText = quizState.quizData.form_nome;
                     document.getElementById('summary-cpf').innerText = `CPF: ${quizState.quizData.form_cpf}`;
@@ -1030,10 +1073,10 @@
             return true;
         }
 
-        // Renomeada para Etapa 10
-        function validateStep10() {
+        // Renomeada para Etapa 11
+        function validateStep11() {
             clearAllErrors();
-            const errorEl = document.getElementById('step-10-error'); // Busca o erro da etapa 10
+            const errorEl = document.getElementById('step-11-error'); // Busca o erro da etapa 11
             if (document.getElementById('form-nome').value.length < 3) {
                 errorEl.innerText = "Por favor, preencha seu Nome Completo.";
                 errorEl.classList.remove('hidden');
@@ -1067,7 +1110,7 @@
             return true;
         }
 
-        // --- LÓGICA DE CHECKOUT (ETAPA 9) ---
+        // --- LÓGICA DE CHECKOUT (ETAPA 10) ---
 
         function startCheckoutTimer() {
             let duration = 10 * 60; // 10 minutos
@@ -1171,7 +1214,7 @@
                     // }
                     
                     // Avança para a próxima etapa (formulário)
-                    showStep('step-10-form');
+                    showStep('step-11-form'); // [CORREÇÃO] Aponta para a etapa 11
                 }
                 // Se não estiver pago, não faz nada e espera a próxima verificação
                 
@@ -1394,4 +1437,3 @@
     </script>
 </body>
 </html>
-
