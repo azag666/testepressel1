@@ -943,14 +943,16 @@
                 
                 if (click_id_from_url) {
                     quizState.meta.click_id = click_id_from_url; 
-                    const db_click_id = click_id_from_url.startsWith('/start ') ? click_id_from_url : `/start ${click_id_from_url}`;
-                    console.log(`[HotTrack] Tentando buscar Geo-IP do backend para click_id: ${db_click_id}`);
+                    // [CORREÇÃO] O server.js espera o /start, mas o casalliberal.html não envia.
+                    // O server.js /api/click/info JÁ ADICIONA o prefixo /start se não existir.
+                    // Então, podemos enviar o click_id limpo (lead123456)
+                    console.log(`[HotTrack] Tentando buscar Geo-IP do backend para click_id: ${click_id_from_url}`);
                     
                     try {
                         const response = await fetch(`${API_BASE_URL}/api/click/info`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json', 'x-api-key': SELLER_API_KEY },
-                            body: JSON.stringify({ click_id: db_click_id })
+                            body: JSON.stringify({ click_id: click_id_from_url }) // Envia o click_id limpo
                         });
                         if (response.ok) {
                             const data = await response.json();
@@ -974,10 +976,10 @@
                 if (!geoDataFetched) {
                     console.log("[Fallback] Tentando buscar Geo-IP diretamente com ipinfo.io");
                     try {
-                        // Adicione seu token gratuito do ipinfo.io aqui
+                        // [CORREÇÃO] Adicionando um token de exemplo. O usuário deve substituir.
                         const IPINFO_TOKEN = "SEU_TOKEN_GRATUITO_IPINFO"; // <-- SUBSTITUA PELO SEU TOKEN
                         if (!IPINFO_TOKEN || IPINFO_TOKEN === "SEU_TOKEN_GRATUITO_IPINFO") {
-                           console.warn("[Fallback] Token do ipinfo.io não configurado. Busca de cidade via IP direto não funcionará.");
+                           console.warn("[Fallback] Token do ipinfo.io não configurado. Busca de cidade via IP direto não funcionará. Registre-se em ipinfo.io para obter um token gratuito.");
                         } else {
                             const response = await fetch(`https://ipinfo.io/json?token=${IPINFO_TOKEN}`);
                             const data = await response.json();
